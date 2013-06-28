@@ -508,7 +508,7 @@ if __name__ == '__main__':
     print('extern darm_enctype_t thumb2_instr_types[256];')
 
     def type_lut(name, bits):
-        print('darm_instr_t type_%s_instr_lookup[%d];' % (name, 2**bits))
+        print('extern darm_instr_t type_%s_instr_lookup[%d];' % (name, 2**bits))
 
     print('extern darm_instr_t armv7_instr_labels[256];')
     type_lut('shift', 4)
@@ -524,7 +524,7 @@ if __name__ == '__main__':
     type_lut('sat', 2)
     type_lut('sync', 4)
     type_lut('pusr', 4)
-    print('const char *armv7_format_strings[%d][3];' % instrcnt)
+    print('extern const char *armv7_format_strings[%d][3];' % instrcnt)
 
     print('#endif')
 

@@ -124,6 +124,7 @@ int main(int argc, char** argv){
             wisa = A_ARMV7;
         } else if (!strcmp(argv[i], "-thumb")){
             wisa = A_THUMB;
+            print_usage(argv[0], "THUMB set not yet supported by darm");
         } else if (!strcmp(argv[i], "-thumb2")){
             wisa = A_THUMB2;
             print_usage(argv[0], "THUMB2 set not yet supported by darm");
