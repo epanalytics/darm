@@ -1,3 +1,32 @@
+/*
+Copyright (c) 2013, Michael Laurenzano
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of the darm developer(s) nor the names of its
+  contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -28,6 +57,8 @@ typedef enum _pcase {
 
 #define BUF_LIMIT (1024)
 
+#define CLI_ERROR(__code, ...) fprintf(stderr, "error: " __VA_ARGS__); exit(__code);
+
 /*#define _CLI_DEBUG*/
 #ifdef _CLI_DEBUG
 #define DEBUG(...) __VA_ARGS__
@@ -47,8 +78,7 @@ uint8_t hex_value(char c){
     } else if (IS_HEX_UPPER(c)){
         t = c - 'A' + 0xa;
     } else {
-        fprintf(stderr, "error: %c is not a hex character\n", c);
-        exit(4);
+        CLI_ERROR(2, "%c is not a hex character\n", c);
     }
     return t;
 }
@@ -183,7 +213,6 @@ int main(int argc, char** argv){
         in_file = fopen(fname, "rb");
         if (in_file == NULL){
             print_usage(argv[0], "argument to -file cannot be opened");
-            exit(5);
         }
         fseek(in_file, offset, SEEK_SET);
     }
@@ -196,8 +225,7 @@ int main(int argc, char** argv){
         lnsz = 2;
         break;
     default:
-        fprintf(stderr, "panic: unexpected instruction set found\n");
-        exit(2);
+        CLI_ERROR(3, "unexpected instruction set %d found\n", wisa);
     }
 
 
@@ -258,17 +286,20 @@ int main(int argc, char** argv){
                 break;
 
             default:
-                fprintf(stderr, "panic: unexpected instruction set found\n");
-                exit(2);
+                CLI_ERROR(3, "unexpected instruction set %d found\n", wisa);
             }
 
             if (ret){
-                fprintf(stderr, "error: disassembler returned error after %d bytes\n", consumed);
                 darm_dump(&d);
-                exit(4);
+                CLI_ERROR(4, "disassembler returned error after %d bytes\n", consumed);
             }
 
-            darm_str2(&d, &s, lu);
+            ret = darm_str2(&d, &s, lu);
+            if (ret){
+                darm_dump(&d);
+                CLI_ERROR(5, "darm_str returned error\n");
+            }
+
             if (P_LOWER == lu){
                 fprintf(stdout, "0x%08x:\t%x\t%s\n", pc + consumed, d.w, s.instr);
             } else {
