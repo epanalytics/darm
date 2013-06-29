@@ -41,9 +41,8 @@ typedef enum _endian {
 } endian;
 
 typedef enum _isa {
-    A_ARMV7,
+    A_ARM,
     A_THUMB,
-    A_THUMB2,
     
     A_INVLD = -1,
 } isa;
@@ -90,7 +89,7 @@ void print_usage(const char* prg, const char* msg){
     fprintf(stderr, "usage: %s\n", prg);
     fprintf(stderr, "\t-help\t\t\t\tprint this help message\n");
     fprintf(stderr, "\t-le|-be\t\t\t\tlittle or big endian (default: little)\n");
-    fprintf(stderr, "\t-armv7|-thumb|-thumb2\t\tarmv7, thumb or thumb2 mode (default: armv7)\n");
+    fprintf(stderr, "\t-arm|-thumb\t\t\tarm or thumb mode (default: arm)\n");
     fprintf(stderr, "\t-xin|-file <file>\t\tuse stdin with hex text, or a file + offset (default: stdin)\n");
     fprintf(stderr, "\t-pc <value>\t\t\tset the value of PC (default: 0)\n");
     fprintf(stderr, "\t-len <value>\t\t\tset the number of bytes to disassemble (default: go until EOF)\n");
@@ -121,7 +120,7 @@ int main(int argc, char** argv){
 
     darm_t d;
     darm_str_t s;
-    isa wisa = A_ARMV7;
+    isa wisa = A_ARM;
     endian wendian = E_LITTLE;
     int lu = P_LOWER;
 
@@ -150,14 +149,11 @@ int main(int argc, char** argv){
             print_usage(argv[0], "-be option not supported");
         } else if (!strcmp(argv[i], "-le")){
             wendian = E_LITTLE;
-        } else if (!strcmp(argv[i], "-armv7")){
-            wisa = A_ARMV7;
+        } else if (!strcmp(argv[i], "-arm")){
+            wisa = A_ARM;
         } else if (!strcmp(argv[i], "-thumb")){
             wisa = A_THUMB;
-            print_usage(argv[0], "THUMB set not yet supported by darm");
-        } else if (!strcmp(argv[i], "-thumb2")){
-            wisa = A_THUMB2;
-            print_usage(argv[0], "THUMB2 set not yet supported by darm");
+            print_usage(argv[0], "THUMB set not yet fully supported by darm");
         } else if (!strcmp(argv[i], "-xin")){
             use_stdin = 1;
         } else if (!strcmp(argv[i], "-file")){
@@ -217,18 +213,6 @@ int main(int argc, char** argv){
         fseek(in_file, offset, SEEK_SET);
     }
 
-    switch (wisa){
-    case A_ARMV7:
-        lnsz = 4;
-        break;
-    case A_THUMB:
-        lnsz = 2;
-        break;
-    default:
-        CLI_ERROR(3, "unexpected instruction set %d found\n", wisa);
-    }
-
-
     c1 = c2 = 0;
     while (1){
 
@@ -263,11 +247,13 @@ int main(int argc, char** argv){
 
         DEBUG(fprintf(stdout, "insn_buf prepre: %x\n", insn_buf));
 
-        while (buf_len >= lnsz){
+        while (buf_len >= 2){
             ret = 0;
 
             switch (wisa){
-            case A_ARMV7:
+            case A_ARM:
+                if (buf_len < 4) break;
+
                 if (use_stdin){
                     insn32 = BYTES_TO_UINT32(insn_buf[0], insn_buf[1], insn_buf[2], insn_buf[3]);
                 } else {
@@ -282,7 +268,13 @@ int main(int argc, char** argv){
                 } else {
                     insn16 = BYTES_TO_UINT16(insn_buf[1], insn_buf[0]);
                 }
-                ret = darm_thumb_disasm(&d, insn16);
+
+                if (TEST_THUMB2_32BIT(insn16)){
+                    // TODO
+                    CLI_ERROR(6, "do not support 32-bit thumb2 yet");
+                } else {
+                    ret = darm_thumb_disasm(&d, insn16);
+                }
                 break;
 
             default:
@@ -293,6 +285,8 @@ int main(int argc, char** argv){
                 darm_dump(&d);
                 CLI_ERROR(4, "disassembler returned error after %d bytes\n", consumed);
             }
+
+            lnsz = d.size;
 
             ret = darm_str2(&d, &s, lu);
             if (ret){

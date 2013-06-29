@@ -37,6 +37,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #define ARRAYSIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
+#define TEST_THUMB2_32BIT(__sw) ((((__sw >> 13) & 0b111) == 0b111) && (((__sw >> 11) & 0b11) != 0b00))
+
 #define B_UNSET 0
 #define B_SET   1
 #define B_INVLD 2
@@ -84,6 +86,9 @@ typedef struct _darm_t {
     // the instruction label
     darm_instr_t    instr;
     darm_enctype_t  instr_type;
+
+    // size (in bytes) of the instruction
+    uint32_t        size;
 
     // conditional flags, if any
     darm_cond_t     cond;
