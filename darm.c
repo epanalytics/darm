@@ -174,6 +174,13 @@ int darm_str(const darm_t *d, darm_str_t *str)
             arg++;
             continue;
 
+        case 'P':
+            // stack pointer is implicit
+            APPEND(args[arg], darm_register_name(SP));
+            arg++;
+            off++;
+            continue;
+
         case 'S':
             // is there even a shift?
             if(d->shift_type == S_INVLD) continue;

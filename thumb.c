@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "darm.h"
 #include "thumb-tbl.h"
 
+#define BITMSK_7 ((1 << 7) - 1)
 #define BITMSK_8 ((1 << 8) - 1)
 static int thumb_disasm(darm_t *d, uint16_t w)
 {
@@ -77,6 +78,20 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         d->Rn = (w>>3) & 0b111;
         d->Rm = (w>>6) & 0b111;
         return 0;
+    case T_THUMB_ARITH_STACK:
+        d->Rn = SP;
+        d->I = B_SET;
+        switch((w >> 11)){
+        case 0b10101:
+            d->Rd = (w >> 8) & 0b111;
+            d->imm = (w & BITMSK_8) << 2;
+            return 0;
+        case 0b10110:
+            d->instr = (w >> 7) & 1 ? I_SUB : I_ADD;
+            d->Rd = SP;
+            d->imm = (w & BITMSK_7) << 2;
+            return 0;
+        }
     }
     return -1;
 }

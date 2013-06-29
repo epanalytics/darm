@@ -160,6 +160,7 @@ def generate_format_strings(arr):
         # immediate values
         '#<const>', 'i',
         '#<imm2>', 'i',
+        '#<imm3>', 'i',
         '#<imm4>', 'i',
         '#<imm5>', 'i',
         '#<imm7>', 'i',
@@ -167,6 +168,9 @@ def generate_format_strings(arr):
         '#<imm12>', 'i',
         '#<imm16>', 'i',
         '#<imm24>', 'i',
+
+        # stack pointer
+        'SP', 'P',
 
         # immediate and register shift
         '{,<shift>}', 'S',
@@ -373,12 +377,16 @@ instr_types = [
            'ins{S}<c> <Rd3>,#<const>',
            'ins{S}<c> <Rdn>,#<const>'],	
           lambda x, y, z: x[0:3] == (0, 0, 1) and x[-1] == d2.imm8 and x[-2] in (d2.Rd, d2.Rd3, d2.Rdn)),
-	thumb('ARITH_REG_REG', 'Arithmetic with registers',
-			['ins{S}<c> <Rd>,<Rn>,<Rm>',
-			'ins{S} <Rd3>, <Rn3>, <Rm3>',
-			'ins <Rd3>, <Rn3>, <Rm3>'
-				],
-			lambda x, y, z: x[0:5] == (0,0,0,1,1) and x[-3:] == (d2.Rm3, d2.Rn3, d2.Rd3)),
+    thumb('ARITH_REG_REG', 'Arithmetic with registers',
+          ['ins{S}<c> <Rd>,<Rn>,<Rm>',
+           'ins{S} <Rd3>, <Rn3>, <Rm3>',
+           'ins <Rd3>, <Rn3>, <Rm3>'],
+          lambda x, y, z: x[0:5] == (0,0,0,1,1) and x[-3:] == (d2.Rm3, d2.Rn3, d2.Rd3)),
+
+    thumb('ARITH_STACK',
+          'Arithmetic instructions that use the stack',
+          ['ins{S}<c> <Rd>,SP,#<const>'],
+          lambda x, y, z: y.find('SP') > 0),
 ]
 
 if __name__ == '__main__':
@@ -455,7 +463,7 @@ if __name__ == '__main__':
                     if y[4](bits, instr, 0):
                         thumb_table[idx] = instruction_name(instr), y
                         # debug matching
-                        print instr, thumb_table[idx]
+                        #print instr, thumb_table[idx]
                         y[-1].append(instr)
 
     # make a list of unique instructions affected by each encoding type,
@@ -517,7 +525,7 @@ if __name__ == '__main__':
     print('extern const char *thumb_registers[9];')
 
     thumb_fmtstrs = generate_format_strings(darmtbl2.thumbs)
-    print('const char *thumb_format_strings[%d][3];' % instrcnt)
+    print('const char *thumb_format_strings[%d][5];' % instrcnt)
     print('#endif')
 
     #
@@ -592,7 +600,7 @@ if __name__ == '__main__':
     for instr, fmtstr in thumb_fmtstrs.items():
         fmtstr = ', '.join('"%s"' % x for x in set(fmtstr))
         lines.append('    [I_%s] = {%s},' % (instr, fmtstr))
-    print('const char *thumb_format_strings[%d][3] = {' % instrcnt)
+    print('const char *thumb_format_strings[%d][5] = {' % instrcnt)
     print('\n'.join(sorted(lines)))
     print('};')
 
