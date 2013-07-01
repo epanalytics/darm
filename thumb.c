@@ -82,10 +82,10 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         d->S = B_SET;
         d->Rn = GETBT(w, 8, 3);
         d->Rd = d->Rn;
-        if (d->instr == I_MOVS){
+        if (I_MOVS == d->instr){
             d->Rn = R_INVLD;
         }
-        if (d->instr == I_CMP){
+        if (I_CMP == d->instr){
             d->Rd = R_INVLD;
         }
         d->I = B_SET;
@@ -93,9 +93,16 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         return 0;
 
     case T_THUMB_ALU:
-        d->instr = type_thumb_alu_instr_lookup[GETBT(w, 6, 4)];
+        d->S = B_SET;
         d->Rm = GETBT(w, 3, 3);
         d->Rd = GETBT(w, 0, 3);
+        d->Rn = d->Rd;
+        if (I_CMN == d->instr || I_CMP == d->instr){
+            d->Rd = R_INVLD;
+        }
+        if (I_MVN == d->instr){
+            d->Rn = R_INVLD;
+        }
         return 0;
 
     case T_THUMB_HIREG_BX:
@@ -130,9 +137,11 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         d->Rt = GETBT(w, 8, 3);
         d->I = B_SET;
         d->imm = (GETBT(w, 0, 8) << 2);
-        // TODO: is this a good way of expressing PC-rel?
+        // TODO: is this a good way of expressing PC-relativity?
         d->Rn = PC;
         return 0;
+
+        
     }
     return -1;
 }
