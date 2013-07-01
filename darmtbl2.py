@@ -40,13 +40,14 @@ class Bitsize:
 
 cond          = Bitsize('cond', 4, 'Conditional Flags')
 Rd            = Bitsize('Rd', 4, 'Destination Register')
-Rd3           = Bitsize('Rd3', 3, 'Destination Register')
+Rd3           = Bitsize('Rd', 3, 'Destination Register')
 Rs            = Bitsize('Rs', 3, 'Shift Immediate')
 Rn            = Bitsize('Rn', 4, 'N Register')
 Rn3           = Bitsize('Rn', 3, 'N Register')
 Rm            = Bitsize('Rm', 4, 'Shift Register')
 Rm3           = Bitsize('Rm', 3, 'Shift Register')
-Rt            = Bitsize('Rt', 3, 'Transferred Register')
+Rt            = Bitsize('Rt', 4, 'Transferred Register')
+Rt3           = Bitsize('Rt', 3, 'Transferred Register')
 Rt2           = Bitsize('Rt2', 4, 'Second Ternary Register')
 Ra            = Bitsize('Ra', 4, 'Accumulate Register')
 Rdm           = Bitsize('Rdm', 4, 'Destination & M Register')
@@ -112,14 +113,9 @@ imm24         = Bitsize('imm24', 24, 'Immediate')
 # are commented out because they throw warnings and need fmt string specificers
 thumbs = [
     ('ADC{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 1, 0, S, Rn, 0, imm3, Rd, imm8),
-    ('ADC{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, Rm, Rdn),
     ('ADC{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
-    ('ADDS <Rd>, <Rn>, #<imm3>', 0, 0, 0, 1, 1, 1, 0, imm3, Rn, Rd),
-    ('ADDS <Rdn>, #<imm8>', 0, 0, 1, 1, 0, Rdn, imm8),
     #('ADD{S}<c>.W <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 0, 0, S, Rn, 0, imm3, Rd, imm8),
     ('ADDW<c> <Rd>, <Rn>, #<imm12>', 1, 1, 1, 1, 0, i, 1, 0, 0, 0, 0, 0, Rn, 0, imm3, Rd, imm8),
-    ('ADD{S} <Rd3>, <Rn3>, <Rm3>', 0, 0, 0, 1, 1, 0, 0, Rm3, Rn3, Rd3),
-    ('ADD<c> <Rdn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 0, M, DN, Rm3, Rdn3),
     ('ADD{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('ADD{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('ADD<c> <Rd>, SP, #<imm8>', 1, 0, 1, 0, 1, Rd3, imm8),
@@ -132,11 +128,8 @@ thumbs = [
     ('ADR<c>.W <Rd>, <label>', 1, 1, 1, 1, 0, i, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, imm3, Rd, imm8),
     ('ADR<c>.W <Rd>, <label>', 1, 1, 1, 1, 0, i, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, imm3, Rd, imm8),
     ('AND{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 0, 0, S, Rn, 0, imm3, Rd, imm8),
-    ('AND{S}', 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, Rm, Rdn),
     ('AND{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
-    ('ASR{S} <Rd3>, <Rm3>, #<imm5>', 0, 0, 0, 1, 0, imm5, Rm3, Rd3),
     #('ASR{S}<c>.W <Rd>, <Rm>, #<imm>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), imm3, Rd, imm2, 1, 0, Rm),
-    ('ASR{S}', 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, Rm, Rdn),
     ('ASR{S}<c>.W <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, S, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('B<c> <label>', 1, 1, 0, 1, cond, imm8),
     ('B<c> <label>', 1, 1, 1, 0, 0, imm11),
@@ -145,31 +138,23 @@ thumbs = [
     ('BFC<c> <Rd>, #<lsb>, #<width>', 1, 1, 1, 1, 0, (0), 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, imm3, Rd, imm2, (0), msb),
     ('BFI<c> <Rd>, <Rn>, #<lsb>, #<width>', 1, 1, 1, 1, 0, (0), 1, 1, 0, 1, 1, 0, Rn, 0, imm3, Rd, imm2, (0), msb),
     ('BIC{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 0, 1, S, Rn, 0, imm3, Rd, imm8),
-    ('BIC{S}', 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, Rm, Rdn),
     ('BIC{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('BKPT #<imm8>', 1, 0, 1, 1, 1, 1, 1, 0, imm8),
     ('BL<c> <label>', 1, 1, 1, 1, 0, S, imm10, 1, 1, J1, 1, J2, imm11),
     ('BLX<c> <label>', 1, 1, 1, 1, 0, S, imm10H, 1, 1, J1, 0, J2, imm10L, H),
-    ('BLX<c> <Rm>', 0, 1, 0, 0, 0, 1, 1, 1, 1, Rm, (0), (0), (0)),
-    ('BX<c> <Rm>', 0, 1, 0, 0, 0, 1, 1, 1, 0, Rm, (0), (0), (0)),
     ('BXJ<c> <Rm>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, Rm, 1, 0, (0), 0, (1), (1), (1), (1), (0), (0), (0), (0), (0), (0), (0), (0)),
     #('CB{N}Z <Rn>, <label>', 1, 0, 1, 1, op, 0, i, 1, imm5, Rn),
     #('CB{N}Z <Rn>, <label>', 1, 0, 1, 1, op, 0, i, 1, imm5, Rn),
     ('CLREX<c>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, (1), (1), (1), (1), 1, 0, (0), 0, (1), (1), (1), (1), 0, 0, 1, 0, (1), (1), (1), (1)),
     ('CLZ<c> <Rd>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, Rm, 1, 1, 1, 1, Rd, 1, 0, 0, 0, Rm),
     ('CMN<c> <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 0, 0, 1, Rn, 0, imm3, 1, 1, 1, 1, imm8),
-    ('CMN<c> <Rn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, Rm, Rn),
     ('CMN<c>.W', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, Rn, (0), imm3, 1, 1, 1, 1, imm2, type_, Rm),
-    ('CMP<c> <Rn3>, #<imm8>', 0, 0, 1, 0, 1, Rn3, imm8),
     #('CMP<c>.W <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 1, 0, 1, 1, Rn, 0, imm3, 1, 1, 1, 1, imm8),
-    ('CMP<c> <Rn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, Rm, Rn),
-    ('CMP<c> <Rn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 1, M, N, Rm3, Rn3),
     ('CMP<c>.W <Rn>, <Rm> {, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, Rn, (0), imm3, 1, 1, 1, 1, imm2, type_, Rm),
     ('DBG<c> #<option>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 1, 1, 1, 1, option),
     ('DMB<c> <option>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, (1), (1), (1), (1), 1, 0, (0), 0, (1), (1), (1), (1), 0, 1, 0, 1, option),
     ('DSB<c> <option>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, (1), (1), (1), (1), 1, 0, (0), 0, (1), (1), (1), (1), 0, 1, 0, 0, option),
     ('EOR{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 1, 0, 0, S, Rn, 0, imm3, Rd, imm8),
-    ('EOR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, Rm, Rdn),
     ('EOR{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('ISB<c> <option>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, (1), (1), (1), (1), 1, 0, (0), 0, (1), (1), (1), (1), 0, 1, 1, 0, option),
     #('IT{<x>{<y>{<z>}}} <firstcond>', 1, 0, 1, 1, 1, 1, 1, 1, firstcond, mask),
@@ -183,7 +168,6 @@ thumbs = [
     #('LDR<c>.W <Rt>, [<Rn>{, #<imm12>}]', 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, Rn, Rt, imm12),
     #('LDR<c> <Rt>, [<Rn>, #-<imm8>]', 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, Rn, Rt, 1, P, U, W, imm8),
     #('LDR<c> <Rt>, [<Rn>, #-<imm8>]', 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, Rn, Rt, 1, P, U, W, imm8),
-    ('LDR<c> <Rt>, <label>', 0, 1, 0, 0, 1, Rt, imm8),
     ('LDR<c>.W <Rt>, <label>', 1, 1, 1, 1, 1, 0, 0, 0, U, 1, 0, 1, 1, 1, 1, 1, Rt, imm12),
     ('LDR<c> <Rt>, [<Rn>, <Rm>]', 0, 1, 0, 1, 1, 0, 0, Rm, Rn, Rt),
     #('LDR<c>.W <Rt>, [<Rn>, <Rm>{, LSL #<imm2>}]', 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, Rn, Rt, 0, 0, 0, 0, 0, 0, imm2, Rm),
@@ -223,36 +207,26 @@ thumbs = [
     #('LDRSH<c>.W <Rt>, [<Rn>, <Rm>{, LSL #<imm2>}]', 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, Rn, Rt, 0, 0, 0, 0, 0, 0, imm2, Rm),
     ('LDRSHT<c> <Rt>, [<Rn>, #<imm8>]', 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, Rn, Rt, 1, 1, 1, 0, imm8),
     ('LDRT<c> <Rt>, [<Rn>, #<imm8>]', 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, Rn, Rt, 1, 1, 1, 0, imm8),
-    ('LSL{S} <Rd>, <Rm>, #<imm5>', 0, 0, 0, 0, 0, imm5, Rm, Rd),
     #('LSL{S}<c>.W <Rd>, <Rm>, #<imm5>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), imm3, Rd, imm2, 0, 0, Rm),
-    ('LSL{S} <Rdn3, Rm3>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, Rm3, Rdn3),
     ('LSL{S}<c>.W <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, S, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
-    ('LSR{S} <Rd3>, <Rm3>, #<imm5>', 0, 0, 0, 0, 1, imm5, Rm, Rd),
     #('LSR{S}<c>.W <Rd>, <Rm>, #<imm>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), imm3, Rd, imm2, 0, 1, Rm),
-    ('LSR{S} <Rdn3, Rm3>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, Rm3, Rdn3),
     ('LSR{S}<c>.W <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, S, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('MLA<c> <Rd>, <Rn>, <Rm>, <Ra>', 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, Rn, Ra, Rd, 0, 0, 0, 0, Rm),
     ('MLS<c> <Rd>, <Rn>, <Rm>, <Ra>', 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, Rn, Ra, Rd, 0, 0, 0, 1, Rm),
-    ('MOVS <Rd3>, #<imm8>', 0, 0, 1, 0, 0, Rd3, imm8),
     ('MOV{S}<c>.W <Rd>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 1, 0, S, 1, 1, 1, 1, 0, imm3, Rd, imm8),
     ('MOVW<c> <Rd>, #<imm16>', 1, 1, 1, 1, 0, i, 1, 0, 0, 1, 0, 0, imm4, 0, imm3, Rd, imm8),
-    ('MOV<c> <Rd>, <Rm>', 0, 1, 0, 0, 0, 1, 1, 0, M, D, Rm3, Rd3),
-    ('MOVS <Rd>, <Rm>', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Rm, Rd),
     ('MOV{S}<c>.W <Rd>, <Rm>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), 0, 0, 0, Rd, 0, 0, 0, 0, Rm),
     ('MOVT<c> <Rd>, #<imm16>', 1, 1, 1, 1, 0, i, 1, 0, 1, 1, 0, 0, imm4, 0, imm3, Rd, imm8),
     ('MRS<c> <Rd>, <spec_reg>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, Rd, (0), (0), 0, (0), (0), (0), (0), (0)),
     #('MSR<c> <spec_reg>, <Rn>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, Rn, 1, 0, (0), 0, mask, 0, 0, (0), (0), 0, (0), (0), (0), (0), (0)),
-    ('MUL{S} <Rdm>, <Rn>, <Rdm>', 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, Rn, Rdm),
     ('MUL<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('MVN{S}<c> <Rd>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 1, 1, S, 1, 1, 1, 1, 0, imm3, Rd, imm8),
-    ('MVN{S} <Rd>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, Rm, Rd),
     ('MVN{S}<c>.W <Rd>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, S, 1, 1, 1, 1, (0), imm3, Rd, imm2, type_, Rm),
     ('NOP<c>', 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
     ('NOP<c>.W', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
     ('ORN{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 1, 1, S, Rn, 0, imm3, Rd, imm8),
     ('ORN{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('ORR{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 1, 0, S, Rn, 0, imm3, Rd, imm8),
-    ('ORR{S}', 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, Rm, Rdn),
     ('ORR{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     #('PKHBT<c> <Rd>, <Rn>, <Rm>{, LSL #<imm>}', 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, S, Rn, (0), imm3, Rd, imm2, tb, T, Rm),
     ('PLD{W}<c> [<Rn>, #<imm12>]', 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, W, 1, Rn, 1, 1, 1, 1, imm12),
@@ -287,17 +261,14 @@ thumbs = [
     ('REVSH<c> <Rd>, <Rm>', 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, Rm, Rd),
     ('REVSH<c>.W <Rd>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, Rm, 1, 1, 1, 1, Rd, 1, 0, 1, 1, Rm),
     ('ROR{S}<c> <Rd>, <Rm>, #<imm>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), imm3, Rd, imm2, 1, 1, Rm),
-    ('ROR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, Rm, Rdn),
     ('ROR{S}<c>.W <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, S, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('RRX{S}<c> <Rd>, <Rm>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), 0, 0, 0, Rd, 0, 0, 1, 1, Rm),
-    ('RSB{S} <Rd>, <Rn>, #0', 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, Rn, Rd),
     ('RSB{S}<c>.W <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 1, 1, 0, S, Rn, 0, imm3, Rd, imm8),
     ('RSB{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('SADD16<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('SADD8<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('SASX<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('SBC{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 1, 1, S, Rn, 0, imm3, Rd, imm8),
-    ('SBC{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, Rm, Rdn),
     ('SBC{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('SBFX<c> <Rd>, <Rn>, #<lsb>, #<width>', 1, 1, 1, 1, 0, (0), 1, 1, 0, 1, 0, 0, Rn, 0, imm3, Rd, imm2, (0), widthm1),
     ('SDIV<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, Rn, (1), (1), (1), (1), Rd, 1, 1, 1, 1, Rm),
@@ -363,9 +334,6 @@ thumbs = [
     #('STRH<c>.W <Rt>, [<Rn>, <Rm>{, LSL #<imm2>}]', 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, Rn, Rt, 0, 0, 0, 0, 0, 0, imm2, Rm),
     ('STRHT<c> <Rt>, [<Rn>, #<imm8>]', 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, Rn, Rt, 1, 1, 1, 0, imm8),
     ('STRT<c> <Rt>, [<Rn>, #<imm8>]', 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, Rn, Rt, 1, 1, 1, 0, imm8),
-    ('SUBS <Rd3>, <Rn3>, <Rm3>', 0, 0, 0, 1, 1, 0, 1, Rm3, Rn3, Rd3),
-    ('SUBS <Rd>, <Rn>, #<imm3>', 0, 0, 0, 1, 1, 1, 1, imm3, Rn, Rd),
-    ('SUBS <Rdn>, #<imm8>', 0, 0, 1, 1, 1, Rdn, imm8),
     #('SUB{S}<c>.W <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 1, 0, 1, S, Rn, 0, imm3, Rd, imm8),
     ('SUBW<c> <Rd>, <Rn>, #<imm12>', 1, 1, 1, 1, 0, i, 1, 0, 1, 0, 1, 0, Rn, 0, imm3, Rd, imm8),
     #('SUB{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
@@ -387,7 +355,6 @@ thumbs = [
     ('TEQ<c> <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 1, 0, 0, 1, Rn, 0, imm3, 1, 1, 1, 1, imm8),
     ('TEQ<c> <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, Rn, (0), imm3, 1, 1, 1, 1, imm2, type_, Rm),
     ('TST<c> <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 0, 0, 1, Rn, 0, imm3, 1, 1, 1, 1, imm8),
-    ('TST<c> <Rn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, Rm, Rn),
     ('TST<c>.W', 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, Rn, (0), imm3, 1, 1, 1, 1, imm2, type_, Rm),
     ('UADD16<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, Rn, 1, 1, 1, 1, Rd, 0, 1, 0, 0, Rm),
     ('UADD8<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, Rn, 1, 1, 1, 1, Rd, 0, 1, 0, 0, Rm),
@@ -432,4 +399,55 @@ thumbs = [
     ('WFI<c>.W', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1),
     ('YIELD<c>', 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0),
     ('YIELD<c>.W', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
+]
+
+# just thumb1 here
+# helpful table: http://www.ittc.ku.edu/~kulkarni/research/thumb_ax.pdf
+# TODO: INS{S} allows disasm to set S for both darm_t and printing, INSS forces print (but doesn't set the darm_t necessarily?)
+thumbs = [
+    # THUMB_DST_SRC
+    ('ADD{S} <Rd>, <Rn>, <Rm>', 0, 0, 0, 1, 1, 0, 0, Rm3, Rn3, Rd3),
+    ('ADD{S} <Rd>, <Rm>, #<imm3>', 0, 0, 0, 1, 1, 1, 0, imm3, Rn3, Rd3),
+    ('SUB{S} <Rd>, <Rn>, <Rm>', 0, 0, 0, 1, 1, 0, 1, Rm3, Rn3, Rd3),
+    ('SUB{S} <Rd>, <Rm>, #<imm3>', 0, 0, 0, 1, 1, 1, 1, imm3, Rn3, Rd3),
+
+    # THUMB_ARITH
+    ('ASR <Rd>, <Rm>, #<imm5>', 0, 0, 0, 1, 0, imm5, Rm3, Rd3),
+    ('LSL <Rd>, <Rm>, #<imm5>', 0, 0, 0, 0, 0, imm5, Rm3, Rd3),
+    ('LSR <Rd>, <Rm>, #<imm5>', 0, 0, 0, 0, 1, imm5, Rm3, Rd3),
+    ('MOV{S} <Rd>, <Rm>', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Rm3, Rd3),
+
+    # THUMB_ARITH_IMM
+    ('ADD{S} <Rdn>, #<imm8>', 0, 0, 1, 1, 0, Rdn3, imm8),
+    ('CMP <Rn>, #<imm8>', 0, 0, 1, 0, 1, Rn3, imm8),
+    ('MOV{S} <Rd>, #<imm8>', 0, 0, 1, 0, 0, Rd3, imm8),
+    ('SUB{S} <Rdn>, #<imm8>', 0, 0, 1, 1, 1, Rdn3, imm8),
+
+    # THUMB_ALU
+    ('ADC{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, Rm3, Rdn3),
+    ('AND{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, Rm3, Rdn3),
+    ('ASR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, Rm3, Rdn3),
+    ('BIC{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, Rm3, Rdn3),
+    ('CMN <Rn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, Rm3, Rn3),
+    ('CMP <Rn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, Rm3, Rn3),
+    ('EOR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, Rm3, Rdn3),
+    ('LSL{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, Rm3, Rdn3),
+    ('LSR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, Rm3, Rdn3),
+    ('MUL{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, Rm3, Rdn3),
+    ('MVN{S} <Rd>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, Rm3, Rd3),
+    ('ORR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, Rm3, Rdn3),
+    ('ROR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, Rm3, Rdn3),
+    ('RSB{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, Rm3, Rdn3),
+    ('SBC{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, Rm3, Rdn3),
+    ('TST{S} <Rn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, Rm3, Rn3),
+
+    # THUMB_HIREGBX
+    ('ADD <Rdn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 0, M, DN, Rm3, Rdn3),
+    ('BLX <Rm>', 0, 1, 0, 0, 0, 1, 1, 1, 1, Rm, (0), (0), (0)),
+    ('BX <Rm>', 0, 1, 0, 0, 0, 1, 1, 1, 0, Rm, (0), (0), (0)),
+    ('CMP <Rn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 1, M, N, Rm3, Rn3),
+    ('MOV <Rd>, <Rm>', 0, 1, 0, 0, 0, 1, 1, 0, M, D, Rm3, Rd3),
+
+    # THUMB_LOAD
+    ('LDR <Rt>, <label>', 0, 1, 0, 0, 1, Rt3, imm8),
 ]

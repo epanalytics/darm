@@ -57,30 +57,41 @@ static int thumb_disasm(darm_t *d, uint16_t w)
     // TODO: handle thumb1 here only?
     // TODO: only need name lookups when >8 bits?
     switch ((uint32_t) d->instr_type){
+
     case T_THUMB_DST_SRC:
-        d->instr = type_thumb_dstsrc_instr_lookup[GETBT(w, 11, 2)];
+        d->S = B_SET;
         d->I = B_SET;
-        d->imm = GETBT(w, 6, 6);
+        d->imm = GETBT(w, 6, 5);
         d->Rm = GETBT(w, 3, 3);
         d->Rd = GETBT(w, 0, 3);
         return 0;
+
     case T_THUMB_ARITH:
-        d->instr = type_thumb_arith_instr_lookup[GETBT(w, 9, 1)];
+        d->S = B_SET;
+        d->Rm = GETBT(w, 6, 3);
         if (GETBT(w, 10, 1)){
             d->I = B_SET;
-            d->imm = GETBT(w, 6, 3);
-        } else {
-            d->Rn = GETBT(w, 6, 3);
+            d->imm = d->Rm;
+            d->Rm = R_INVLD;
         }
-        d->Rm = GETBT(w, 3, 3);
+        d->Rn = GETBT(w, 3, 3);
         d->Rd = GETBT(w, 0, 3);
         return 0;
+
     case T_THUMB_ARITH_IMM:
-        d->instr = type_thumb_arithimm_instr_lookup[GETBT(w, 11, 2)];
-        d->Rd = GETBT(w, 8, 3);
+        d->S = B_SET;
+        d->Rn = GETBT(w, 8, 3);
+        d->Rd = d->Rn;
+        if (d->instr == I_MOVS){
+            d->Rn = R_INVLD;
+        }
+        if (d->instr == I_CMP){
+            d->Rd = R_INVLD;
+        }
         d->I = B_SET;
         d->imm = GETBT(w, 0, 8);
         return 0;
+
     case T_THUMB_ALU:
         d->instr = type_thumb_alu_instr_lookup[GETBT(w, 6, 4)];
         d->Rm = GETBT(w, 3, 3);
@@ -116,11 +127,11 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         return 0;
 
     case T_THUMB_LOAD:
-        d->instr = I_LDR;
-        d->Rd = GETBT(w, 8, 3);
+        d->Rt = GETBT(w, 8, 3);
         d->I = B_SET;
         d->imm = (GETBT(w, 0, 8) << 2);
-        d->Rm = PC;
+        // TODO: is this a good way of expressing PC-rel?
+        d->Rn = PC;
         return 0;
     }
     return -1;

@@ -366,27 +366,6 @@ instr_types = [
            'ins<c> <Rd>,<Rm>{,<rotation>}'],
           lambda x, y, z: x[1:6] == (0, 1, 1, 0, 1)),
 
-    # TODO: remaining thumb1
-    # helpful table: http://www.ittc.ku.edu/~kulkarni/research/thumb_ax.pdf
-    thumb('DST_SRC', 'Manipulate and move a register to another register',
-          ['ins <Rd>,<Rm>', 'ins <Rd>,<Rm>,#<imm>'],
-          lambda x, y, z: x[0:3] == (0, 0, 0) and x[4:6] != (1, 1)),
-    thumb('ARITH', 'Add/subtract',
-          ['ins <Rd>,<Rm>', 'ins <Rd>,<Rm>,#<imm3>', 'ins <Rd>,<Rm>,<Rn>'],
-          lambda x, y, z: x[0:5] == (0, 0, 0, 1, 1)),
-    thumb('ARITH_IMM', 'Move/compare/add/subtract immediate',
-          ['ins <Rd>,#<imm8>'],
-          lambda x, y, z: x[0:3] == (0, 0, 1)),
-    thumb('ALU', 'ALU operations',
-          ['ins <Rd>,<Rm>'],
-          lambda x, y, z: x[0:6] == (0, 1, 0, 0, 0, 0)),
-    thumb('HIREG_BX', 'Hi register operations/branch exchange',
-          ['ins <Rd>,<Rm>', 'ins <Rdn> <Rm>', 'ins <Rm>'],
-          lambda x, y, z: x[0:6] == (0, 1, 0, 0, 0, 1)),
-    thumb('LOAD', 'PC-relative load',
-          ['ins <Rd>,#<imm8>'],
-          lambda x, y, z: x[0:5] == (0, 1, 0, 0, 1)),
-
     # TODO: distinguish between thumb1/thumb2
     thumb('ONLY_IMM8', 'Instructions which only take an 8-byte immediate',
           ['ins<c> #<imm8>'],
@@ -410,6 +389,26 @@ instr_types = [
           'Arithmetic instructions that use the stack',
           ['ins{S}<c> <Rd>,SP,#<const>'],
           lambda x, y, z: y.find('SP') > 0),
+
+    # TODO: remaining thumb1
+    thumb('DST_SRC', 'Manipulate and move a register to another register',
+          ['ins{S} <Rd>,<Rm>', 'ins{S} <Rd>,<Rm>,#<imm>'],
+          lambda x, y, z: x[0:3] == (0, 0, 0) and x[4:6] != (1, 1)),
+    thumb('ARITH', 'Add/subtract',
+          ['ins{S} <Rd>,<Rm>', 'ins{S} <Rd>,<Rm>,#<imm3>', 'ins{S} <Rd>,<Rm>,<Rn>'],
+          lambda x, y, z: x[0:5] == (0, 0, 0, 1, 1)),
+    thumb('ARITH_IMM', 'Move/compare/add/subtract immediate',
+          ['ins{S} <Rd>,#<imm8>', 'ins <Rn>,#<imm8>', 'ins{S} <Rdn>,#<imm8>'],
+          lambda x, y, z: x[0:3] == (0, 0, 1)),
+    thumb('ALU', 'ALU operations',
+          ['ins{S} <Rd>,<Rm>', 'ins{S} <Rn>,<Rm>', 'ins{S} <Rdn>,<Rm>'],
+          lambda x, y, z: x[0:6] == (0, 1, 0, 0, 0, 0)),
+    thumb('HIREG_BX', 'Hi register operations/branch exchange',
+          ['ins <Rd>,<Rm>', 'ins <Rdn> <Rm>', 'ins <Rm>'],
+          lambda x, y, z: x[0:6] == (0, 1, 0, 0, 0, 1)),
+    thumb('LOAD', 'PC-relative load',
+          ['ins <Rt>,<label>'],
+          lambda x, y, z: x[0:5] == (0, 1, 0, 0, 1)),
 ]
 
 if __name__ == '__main__':
@@ -548,7 +547,7 @@ if __name__ == '__main__':
     print('extern const char *thumb_registers[9];')
 
     thumb_fmtstrs = generate_format_strings(darmtbl2.thumbs)
-    print('const char *thumb_format_strings[%d][5];' % instrcnt)
+    print('const char *thumb_format_strings[%d][3];' % instrcnt)
     print('#endif')
 
     #
@@ -586,9 +585,6 @@ if __name__ == '__main__':
     type_lut('sync', 4)
     type_lut('pusr', 4)
 
-    type_lut_thumb('dstsrc', 2)
-    type_lut_thumb('arith', 1)
-    type_lut_thumb('arithimm', 2)
     type_lut_thumb('alu', 4)
     
     print('extern const char *armv7_format_strings[%d][3];' % instrcnt)
@@ -631,7 +627,7 @@ if __name__ == '__main__':
     for instr, fmtstr in thumb_fmtstrs.items():
         fmtstr = ', '.join('"%s"' % x for x in set(fmtstr))
         lines.append('    [I_%s] = {%s},' % (instr, fmtstr))
-    print('const char *thumb_format_strings[%d][5] = {' % instrcnt)
+    print('const char *thumb_format_strings[%d][3] = {' % instrcnt)
     print('\n'.join(sorted(lines)))
     print('};')
 
@@ -764,15 +760,6 @@ if __name__ == '__main__':
     print(type_lookup_table('type_pusr', *t_pusr))
 
 
-
-    t_dstsrc = 'lsl', 'lsr', 'asr', None
-    print type_lookup_table('type_thumb_dstsrc', *t_dstsrc)
-
-    t_arith = 'add', 'sub'
-    print type_lookup_table('type_thumb_arith', *t_arith)
-
-    t_arithimm = 'mov', 'cmp', 'add', 'sub'
-    print type_lookup_table('type_thumb_arithimm', *t_arithimm)
 
     # TODO: fill this in
     t_alu = None, None, None, None, None, None, None, None, \
