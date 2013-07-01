@@ -48,15 +48,15 @@ POSSIBILITY OF SUCH DAMAGE.
 int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
 {
     (void)d; (void) w; (void) w2;
+    uint16_t tmp = 0;
 
     if (IS_THUMB2_32BIT(w)){
         // 32-bit
     } else {
-        // TODO: send all 16-bit thumb here?
+        // TODO: send all 16-bit thumb here? or just thumb1?
         return darm_thumb_disasm(d, w);
     }
 
-    uint16_t tmp = 0;
     d->instr = thumb_instr_labels[w >> 8];
     d->instr_type = thumb_instr_types[w >> 8];
     d->isthumb = 1;

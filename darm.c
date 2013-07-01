@@ -88,6 +88,8 @@ int darm_str(const darm_t *d, darm_str_t *str)
         ptrs = armv7_format_strings[d->instr];
     if(ptrs[0] == NULL) return -1;
 
+    // TODO: this makes assumptions about the similarity in format between
+    // versions of the same insn that do not seem to hold for thumb
     for (char ch; (ch = ptrs[idx][off]) != 0; off++) {
         //printf("got %c %d\n", ch, ch);
         switch (ch) {
@@ -389,6 +391,7 @@ int darm_str(const darm_t *d, darm_str_t *str)
             return -1;
         }
 
+        // TODO: there are many insns with arrays < and > 3
         if(ptrs[++idx] == NULL || idx == 3) return -1;
         off--;
     }

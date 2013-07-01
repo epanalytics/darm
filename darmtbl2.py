@@ -49,7 +49,6 @@ Rm3           = Bitsize('Rm', 3, 'Shift Register')
 Rt            = Bitsize('Rt', 3, 'Transferred Register')
 Rt2           = Bitsize('Rt2', 4, 'Second Ternary Register')
 Ra            = Bitsize('Ra', 4, 'Accumulate Register')
-Rdm           = Bitsize('Rdm', 3, 'Destination & M Register')
 Rdm           = Bitsize('Rdm', 4, 'Destination & M Register')
 Rdm3          = Bitsize('Rdm', 3, 'Destination & M Register')
 Rdn           = Bitsize('Rdn', 4, 'Destination & N Register')
@@ -69,6 +68,7 @@ W             = Bitsize('W', 1, 'Some Bit for LDM')
 widthm1       = Bitsize('widthm1', 5, 'Bit Width Minus One')
 M             = Bitsize('M', 1, 'High 16bits for Rm')
 N             = Bitsize('N', 1, 'High 16bits for Rn')
+DN            = Bitsize('DN', 1, 'High 16bits for Rdn')
 RdHi          = Bitsize('RdHi', 4, 'High 32bits for Rd')
 RdLo          = Bitsize('RdLo', 4, 'Low 32bits for Rd')
 R             = Bitsize('R', 1, 'Round Integer')
@@ -119,15 +119,13 @@ thumbs = [
     #('ADD{S}<c>.W <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 0, 0, S, Rn, 0, imm3, Rd, imm8),
     ('ADDW<c> <Rd>, <Rn>, #<imm12>', 1, 1, 1, 1, 0, i, 1, 0, 0, 0, 0, 0, Rn, 0, imm3, Rd, imm8),
     ('ADD{S} <Rd3>, <Rn3>, <Rm3>', 0, 0, 0, 1, 1, 0, 0, Rm3, Rn3, Rd3),
-    #('ADD<c> <Rdn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 0, Rm, Rdn, DN),
+    ('ADD<c> <Rdn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 0, M, DN, Rm3, Rdn3),
     ('ADD{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('ADD{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('ADD<c> <Rd>, SP, #<imm8>', 1, 0, 1, 0, 1, Rd3, imm8),
     ('ADD<c> SP, SP, #<imm7>', 1, 0, 1, 1, 0, 0, 0, 0, 0, imm7),
     #('ADD{S}<c>.W <Rd>, SP, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 0, 0, S, 1, 1, 0, 1, 0, imm3, Rd, imm8),
     ('ADDW<c> <Rd>, SP, #<imm12>', 1, 1, 1, 1, 0, i, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, imm3, Rd, imm8),
-    #('ADD<c> <Rdm>, SP, <Rdm>', 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, Rdm, DM),
-    #('ADD<c> SP, <Rm>', 0, 1, 0, 0, 0, 1, 0, 0, 1, Rm, 1, 0, 1),
     ('ADD{S}<c>.W <Rd>, SP, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, S, 1, 1, 0, 1, (0), imm3, Rd, imm2, type_, Rm),
     ('ADD{S}<c>.W <Rd>, SP, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, S, 1, 1, 0, 1, (0), imm3, Rd, imm2, type_, Rm),
     ('ADR<c> <Rd3>, <label>', 1, 0, 1, 0, 0, Rd3, imm8),
@@ -165,7 +163,7 @@ thumbs = [
     ('CMP<c> <Rn3>, #<imm8>', 0, 0, 1, 0, 1, Rn3, imm8),
     #('CMP<c>.W <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 1, 0, 1, 1, Rn, 0, imm3, 1, 1, 1, 1, imm8),
     ('CMP<c> <Rn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, Rm, Rn),
-    ('CMP<c> <Rn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 1, N, Rm, Rn),
+    ('CMP<c> <Rn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 1, M, N, Rm3, Rn3),
     ('CMP<c>.W <Rn>, <Rm> {, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, Rn, (0), imm3, 1, 1, 1, 1, imm2, type_, Rm),
     ('DBG<c> #<option>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 1, 1, 1, 1, option),
     ('DMB<c> <option>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, (1), (1), (1), (1), 1, 0, (0), 0, (1), (1), (1), (1), 0, 1, 0, 1, option),
@@ -238,7 +236,7 @@ thumbs = [
     ('MOVS <Rd3>, #<imm8>', 0, 0, 1, 0, 0, Rd3, imm8),
     ('MOV{S}<c>.W <Rd>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 1, 0, S, 1, 1, 1, 1, 0, imm3, Rd, imm8),
     ('MOVW<c> <Rd>, #<imm16>', 1, 1, 1, 1, 0, i, 1, 0, 0, 1, 0, 0, imm4, 0, imm3, Rd, imm8),
-    ('MOV<c> <Rd>, <Rm>', 0, 1, 0, 0, 0, 1, 1, 0, D, Rm, Rd),
+    ('MOV<c> <Rd>, <Rm>', 0, 1, 0, 0, 0, 1, 1, 0, M, D, Rm3, Rd3),
     ('MOVS <Rd>, <Rm>', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Rm, Rd),
     ('MOV{S}<c>.W <Rd>, <Rm>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), 0, 0, 0, Rd, 0, 0, 0, 0, Rm),
     ('MOVT<c> <Rd>, #<imm16>', 1, 1, 1, 1, 0, i, 1, 0, 1, 1, 0, 0, imm4, 0, imm3, Rd, imm8),

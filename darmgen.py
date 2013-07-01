@@ -381,7 +381,7 @@ instr_types = [
           ['ins <Rd>,<Rm>'],
           lambda x, y, z: x[0:6] == (0, 1, 0, 0, 0, 0)),
     thumb('HIREG_BX', 'Hi register operations/branch exchange',
-          ['ins <Rd>,<Rs>'],
+          ['ins <Rd>,<Rm>', 'ins <Rdn> <Rm>', 'ins <Rm>'],
           lambda x, y, z: x[0:6] == (0, 1, 0, 0, 0, 1)),
     thumb('LOAD', 'PC-relative load',
           ['ins <Rd>,#<imm8>'],
@@ -590,7 +590,6 @@ if __name__ == '__main__':
     type_lut_thumb('arith', 1)
     type_lut_thumb('arithimm', 2)
     type_lut_thumb('alu', 4)
-    type_lut_thumb('hiregbx', 2)
     
     print('extern const char *armv7_format_strings[%d][3];' % instrcnt)
 
@@ -779,10 +778,6 @@ if __name__ == '__main__':
     t_alu = None, None, None, None, None, None, None, None, \
         None, None, None, None, None, None, None, None
     print type_lookup_table('type_thumb_alu', *t_alu)
-
-    t_hiregbx = 'add', 'cmp', 'mov', 'bx'
-    print type_lookup_table('type_thumb_hiregbx', *t_hiregbx)
-    
 
 
     lines = []

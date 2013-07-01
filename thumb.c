@@ -46,6 +46,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 static int thumb_disasm(darm_t *d, uint16_t w)
 {
+    uint8_t h1, h2, r1, r2;
+
     d->instr = thumb_instr_labels[w >> 8];
     d->instr_type = thumb_instr_types[w >> 8];
     d->isthumb = 1;
@@ -84,12 +86,35 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         d->Rm = GETBT(w, 3, 3);
         d->Rd = GETBT(w, 0, 3);
         return 0;
+
     case T_THUMB_HIREG_BX:
-        d->instr = type_thumb_hiregbx_instr_lookup[GETBT(w, 8, 2)];
-        // TODO: how do H1/H2 work? this isn't right
-        d->Rd = GETBT(w, 0, 3) + (GETBT(w, 6, 1)? 0 : 8);
-        d->Rm = GETBT(w, 3, 3) + (GETBT(w, 7, 1)? 0 : 8);
+        h1 = GETBT(w, 7, 1);
+        h2 = GETBT(w, 6, 1);
+
+        r1 = GETBT(w, 0, 3) + (h1? 8 : 0);
+        r2 = GETBT(w, 3, 3) + (h2? 8 : 0);
+
+        switch((uint32_t)d->instr){
+        case I_ADD:
+            d->Rd = r1;
+            //d->Rn = r1;
+            d->Rm = r2;
+            break;
+        case I_MOV:
+            d->Rd = r1;
+            d->Rm = r2;
+            break;
+        case I_CMP:
+            d->Rn = r1;
+            d->Rm = r2;
+            break;
+        case I_BX:
+            d->Rm = r2;
+            d->instr = h1? I_BLX : I_BX;
+            break;
+        }
         return 0;
+
     case T_THUMB_LOAD:
         d->instr = I_LDR;
         d->Rd = GETBT(w, 8, 3);
