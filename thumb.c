@@ -97,7 +97,7 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         switch((uint32_t)d->instr){
         case I_ADD:
             d->Rd = r1;
-            //d->Rn = r1;
+            d->Rn = r1;
             d->Rm = r2;
             break;
         case I_MOV:
