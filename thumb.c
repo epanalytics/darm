@@ -126,6 +126,7 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         case I_CMP:
             d->Rn = r1;
             d->Rm = r2;
+            d->S = B_SET;
             break;
         case I_BX:
             d->Rm = r2;
@@ -140,6 +141,7 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         d->I = B_SET;
         d->imm = (GETBT(w, 0, 8) << 2);
         d->Rn = PC;
+        // TODO: add 4 more to imm?
         return 0;
 
     case T_THUMB_LDST_REG:

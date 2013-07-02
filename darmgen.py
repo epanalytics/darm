@@ -134,10 +134,14 @@ def format_string(full):
         '<c>', 'c',
 
         # implicitly-used regs
-        'PC', '<Rn>',
-        'SP', '<Rn>',
+        'PC=<Rn>', '<Rn>',
+        'SP=<Rn>', '<Rn>',
+        'SP=<Rd>', '<Rd>',
 
         # memory address
+        '[<Rn>,<Rm>]', 'M',
+        '[<Rn>,#<imm5>]', 'M',
+        '[<Rn>,#<imm8>]', 'M',
         '[<Rn>,#+/-<imm8>]', 'M',
         '[<Rn>,#+/-<imm12>]', 'M',
         '[<Rn>,+/-<Rm>{,<shift>}]', 'M',

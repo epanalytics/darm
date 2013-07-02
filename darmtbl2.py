@@ -390,40 +390,40 @@ thumbs = [
 # TODO: INS{S} allows disasm to set S for both darm_t and printing, INSS forces print (but doesn't set the darm_t necessarily?)
 thumbs = [
     # THUMB_DST_SRC
-    ('ADD{S} <Rd>, <Rn>, <Rm>',    0, 0, 0, 1, 1, 0, 0, Rm3, Rn3, Rd3),
-    ('ADD{S} <Rd>, <Rm>, #<imm3>', 0, 0, 0, 1, 1, 1, 0, imm3, Rn3, Rd3),
-    ('SUB{S} <Rd>, <Rn>, <Rm>',    0, 0, 0, 1, 1, 0, 1, Rm3, Rn3, Rd3),
-    ('SUB{S} <Rd>, <Rm>, #<imm3>', 0, 0, 0, 1, 1, 1, 1, imm3, Rn3, Rd3),
+    ('ADDS <Rd>, <Rn>, <Rm>',    0, 0, 0, 1, 1, 0, 0, Rm3, Rn3, Rd3),
+    ('ADDS <Rd>, <Rm>, #<imm3>', 0, 0, 0, 1, 1, 1, 0, imm3, Rn3, Rd3),
+    ('SUBS <Rd>, <Rn>, <Rm>',    0, 0, 0, 1, 1, 0, 1, Rm3, Rn3, Rd3),
+    ('SUBS <Rd>, <Rm>, #<imm3>', 0, 0, 0, 1, 1, 1, 1, imm3, Rn3, Rd3),
 
     # THUMB_ARITH
     ('ASR <Rd>, <Rm>, #<imm5>', 0, 0, 0, 1, 0, imm5, Rm3, Rd3),
     ('LSL <Rd>, <Rm>, #<imm5>', 0, 0, 0, 0, 0, imm5, Rm3, Rd3),
     ('LSR <Rd>, <Rm>, #<imm5>', 0, 0, 0, 0, 1, imm5, Rm3, Rd3),
-    ('MOV{S} <Rd>, <Rm>',       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Rm3, Rd3), # special case of LSL
+    ('MOVS <Rd>, <Rm>',       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Rm3, Rd3), # special case of LSL
 
     # THUMB_ARITH_IMM
-    ('ADD{S} <Rdn>, #<imm8>', 0, 0, 1, 1, 0, Rdn3, imm8),
+    ('ADDS <Rdn>, #<imm8>', 0, 0, 1, 1, 0, Rdn3, imm8),
     ('CMP <Rn>, #<imm8>',     0, 0, 1, 0, 1, Rn3, imm8),
-    ('MOV{S} <Rd>, #<imm8>',  0, 0, 1, 0, 0, Rd3, imm8),
-    ('SUB{S} <Rdn>, #<imm8>', 0, 0, 1, 1, 1, Rdn3, imm8),
+    ('MOVS <Rd>, #<imm8>',  0, 0, 1, 0, 0, Rd3, imm8),
+    ('SUBS <Rdn>, #<imm8>', 0, 0, 1, 1, 1, Rdn3, imm8),
 
     # THUMB_ALU
-    ('ADC{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, Rm3, Rdn3),
-    ('AND{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, Rm3, Rdn3),
-    ('ASR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, Rm3, Rdn3),
-    ('BIC{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, Rm3, Rdn3),
-    ('CMN <Rn>, <Rm>',     0, 1, 0, 0, 0, 0, 1, 0, 1, 1, Rm3, Rn3),
-    ('CMP <Rn>, <Rm>',     0, 1, 0, 0, 0, 0, 1, 0, 1, 0, Rm3, Rn3),
-    ('EOR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, Rm3, Rdn3),
-    ('LSL{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, Rm3, Rdn3),
-    ('LSR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, Rm3, Rdn3),
-    ('MUL{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, Rm3, Rdn3),
-    ('MVN{S} <Rd>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 1, 1, 1, Rm3, Rd3),
-    ('ORR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, Rm3, Rdn3),
-    ('ROR{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, Rm3, Rdn3),
-    ('RSB{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, Rm3, Rdn3),
-    ('SBC{S} <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, Rm3, Rdn3),
-    ('TST{S} <Rn>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 0, 0, 0, Rm3, Rn3),
+    ('ADC <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, Rm3, Rdn3),
+    ('AND <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, Rm3, Rdn3),
+    ('ASR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, Rm3, Rdn3),
+    ('BIC <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, Rm3, Rdn3),
+    ('CMN <Rn>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 0, 1, 1, Rm3, Rn3),
+    ('CMP <Rn>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 0, 1, 0, Rm3, Rn3),
+    ('EOR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, Rm3, Rdn3),
+    ('LSL <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, Rm3, Rdn3),
+    ('LSR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, Rm3, Rdn3),
+    ('MUL <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, Rm3, Rdn3),
+    ('MVN <Rd>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 1, 1, 1, Rm3, Rd3),
+    ('ORR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, Rm3, Rdn3),
+    ('ROR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, Rm3, Rdn3),
+    ('RSB <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, Rm3, Rdn3),
+    ('SBC <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, Rm3, Rdn3),
+    ('TST <Rn>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 0, 0, 0, Rm3, Rn3),
 
     # THUMB_HIREGBX
     ('ADD <Rdn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 0, M, DN, Rm3, Rdn3),
@@ -433,36 +433,36 @@ thumbs = [
     ('MOV <Rd>, <Rm>',  0, 1, 0, 0, 0, 1, 1, 0, M, D, Rm3, Rd3),
 
     # THUMB_LOAD_PCREL
-    ('LDR <Rt>, [PC,#+/-<imm8>]', 0, 1, 0, 0, 1, Rt3, imm8),
+    ('LDR <Rt>, [PC=<Rn>,#<imm8>]', 0, 1, 0, 0, 1, Rt3, imm8),
 
     # THUMB_LDST_REGOFF
-    ('LDR <Rt>, [<Rn>],+/-<Rm>',   0, 1, 0, 1, 1, 0, 0, Rm3, Rn3, Rt3),
-    ('LDRB <Rt>, [<Rn>],+/-<Rm>',  0, 1, 0, 1, 1, 1, 0, Rm3, Rn3, Rt3),
-    ('LDRH <Rt>, [<Rn>],+/-<Rm>',  0, 1, 0, 1, 1, 0, 1, Rm3, Rn3, Rt3),
-    ('LDRSB <Rt>, [<Rn>],+/-<Rm>', 0, 1, 0, 1, 0, 1, 1, Rm3, Rn3, Rt3),
-    ('LDRSH <Rt>, [<Rn>],+/-<Rm>', 0, 1, 0, 1, 1, 1, 1, Rm3, Rn3, Rt3),
-    ('STR <Rt>, [<Rn>],+/-<Rm>',   0, 1, 0, 1, 0, 0, 0, Rm3, Rn3, Rt3),
-    ('STRB <Rt>, [<Rn>],+/-<Rm>',  0, 1, 0, 1, 0, 1, 0, Rm3, Rn3, Rt3),
-    ('STRH <Rt>, [<Rn>],+/-<Rm>',  0, 1, 0, 1, 0, 0, 1, Rm3, Rn3, Rt3),
+    ('LDR <Rt>, [<Rn>,<Rm>]',   0, 1, 0, 1, 1, 0, 0, Rm3, Rn3, Rt3),
+    ('LDRB <Rt>, [<Rn>,<Rm>]',  0, 1, 0, 1, 1, 1, 0, Rm3, Rn3, Rt3),
+    ('LDRH <Rt>, [<Rn>,<Rm>]',  0, 1, 0, 1, 1, 0, 1, Rm3, Rn3, Rt3),
+    ('LDRSB <Rt>, [<Rn>,<Rm>]', 0, 1, 0, 1, 0, 1, 1, Rm3, Rn3, Rt3),
+    ('LDRSH <Rt>, [<Rn>,<Rm>]', 0, 1, 0, 1, 1, 1, 1, Rm3, Rn3, Rt3),
+    ('STR <Rt>, [<Rn>,<Rm>]',   0, 1, 0, 1, 0, 0, 0, Rm3, Rn3, Rt3),
+    ('STRB <Rt>, [<Rn>,<Rm>]',  0, 1, 0, 1, 0, 1, 0, Rm3, Rn3, Rt3),
+    ('STRH <Rt>, [<Rn>,<Rm>]',  0, 1, 0, 1, 0, 0, 1, Rm3, Rn3, Rt3),
 
     # THUMB_LDST_IMM
-    ('LDR <Rt>, [<Rn>],#+/-<imm5>',  0, 1, 1, 0, 1, imm5, Rn3, Rt3),
-    ('LDRB <Rt>, [<Rn>],#+/-<imm5>', 0, 1, 1, 1, 1, imm5, Rn3, Rt3),
-    ('LDRH <Rt>, [<Rn>],#+/-<imm5>', 1, 0, 0, 0, 1, imm5, Rn3, Rt3),
-    ('STR <Rt>, [<Rn>],#+/-<imm5>',  0, 1, 1, 0, 0, imm5, Rn3, Rt3),
-    ('STRB <Rt>, [<Rn>],#+/-<imm5>', 0, 1, 1, 1, 0, imm5, Rn3, Rt3),
-    ('STRH <Rt>, [<Rn>],#+/-<imm5>', 1, 0, 0, 0, 0, imm5, Rn3, Rt3),
+    ('LDR <Rt>, [<Rn>,#<imm5>]',  0, 1, 1, 0, 1, imm5, Rn3, Rt3),
+    ('LDRB <Rt>, [<Rn>,#<imm5>]', 0, 1, 1, 1, 1, imm5, Rn3, Rt3),
+    ('LDRH <Rt>, [<Rn>,#<imm5>]', 1, 0, 0, 0, 1, imm5, Rn3, Rt3),
+    ('STR <Rt>, [<Rn>,#<imm5>]',  0, 1, 1, 0, 0, imm5, Rn3, Rt3),
+    ('STRB <Rt>, [<Rn>,#<imm5>]', 0, 1, 1, 1, 0, imm5, Rn3, Rt3),
+    ('STRH <Rt>, [<Rn>,#<imm5>]', 1, 0, 0, 0, 0, imm5, Rn3, Rt3),
 
     # THUMB_LDST_SPREL
-    ('LDR <Rt>, [SP,#+/-<imm8>]', 1, 0, 0, 1, 1, Rt3, imm8),
-    ('STR <Rt>, [SP,#+/-<imm8>]', 1, 0, 0, 1, 0, Rt3, imm8),
+    ('LDR <Rt>, [SP=<Rn>,#<imm8>]', 1, 0, 0, 1, 1, Rt3, imm8),
+    ('STR <Rt>, [SP=<Rn>,#<imm8>]', 1, 0, 0, 1, 0, Rt3, imm8),
 
     # THUMB_LOAD_ADDR (like LEA in x86)
-    ('ADD <Rd>, SP, #<imm8>', 1, 0, 1, 0, 1, Rd3, imm8),
-    ('ADR <Rd>, PC, #<imm8>', 1, 0, 1, 0, 0, Rd3, imm8),
+    ('ADD <Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 0, 1, Rd3, imm8),
+    ('ADR <Rd>, PC=<Rn>, #<imm8>', 1, 0, 1, 0, 0, Rd3, imm8),
 
     # THUMB_ADD_SP
-    ('ADD SP, SP, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, G, imm7),
+    ('ADD SP=<Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, G, imm7),
 
     # THUMB_PSHPOP
 
