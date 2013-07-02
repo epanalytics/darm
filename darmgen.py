@@ -389,7 +389,7 @@ instr_types = [
            'ins <Rd3>, <Rn3>, <Rm3>'],
           lambda x, y, z: x[0:5] == (0,0,0,1,1) and x[-3:] == (d2.Rm3, d2.Rn3, d2.Rd3)),
 
-    # TODO: remaining thumb1
+    # thumb1
     thumb('DST_SRC', 'Manipulate and move a register to another register',
           ['ins{S} <Rd>,<Rm>', 'ins{S} <Rd>,<Rm>,#<imm>'],
           lambda x, y, z: x[0:3] == (0, 0, 0) and x[4:6] != (1, 1)),
@@ -426,6 +426,18 @@ instr_types = [
     thumb('PSHPOP', 'Push/pop registers to stack',
           ['ins <registers'],
           lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:7] == (1, 0)),
+    thumb('LDST_MULTI', 'Multiple load/store',
+          ['ins <Rn>!,<registers>'],
+          lambda x, y, z: x[0:4] == (1, 1, 0, 0)),
+    thumb('BR_COND', 'Conditional branch',
+          ['ins<c> <label>'],
+          lambda x, y, z: x[0:4] == (1, 1, 0, 1) and x[5:9] != (1, 1, 1, 1)),
+    thumb('SWINT', 'Software interrupt',
+          ['ins #<imm8>'],
+          lambda x, y, z: x[0:8] == (1, 1, 0, 1, 1, 1, 1, 1)),
+    thumb('BR_UNCOND', 'Unconditional branch',
+          ['ins <label>'],
+          lambda x, y, z: x[0:5] == (1, 1, 1, 0, 0)),
 ]
 
 if __name__ == '__main__':

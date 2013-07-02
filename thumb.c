@@ -42,6 +42,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #define BITMSK_6 ((1 << 6) - 1)
 #define BITMSK_7 ((1 << 7) - 1)
 #define BITMSK_8 ((1 << 8) - 1)
+#define BITMSK_9 ((1 << 9) - 1)
+#define BITMSK_10 ((1 << 10) - 1)
+#define BITMSK_11 ((1 << 11) - 1)
+#define BITMSK_12 ((1 << 12) - 1)
+#define BITMSK_13 ((1 << 13) - 1)
+#define BITMSK_14 ((1 << 14) - 1)
+#define BITMSK_15 ((1 << 15) - 1)
 #define GETBT(__v, __o, __n) ((__v >> __o) & BITMSK_ ## __n)
 
 static int thumb_disasm(darm_t *d, uint16_t w)
@@ -199,6 +206,27 @@ static int thumb_disasm(darm_t *d, uint16_t w)
             else if (I_POP == d->instr) d->reglist |= (1 << PC);
             else return -1;
         }
+        return 0;
+
+    case T_THUMB_LDST_MULTI:
+        d->reglist = GETBT(w, 0, 8);
+        d->W = B_SET;
+        d->Rn = GETBT(w, 8, 3);
+        return 0;
+
+    case T_THUMB_BR_COND:
+        // TODO: add 4 more to imm?
+    case T_THUMB_SWINT:
+        d->cond = GETBT(w, 8, 4);
+        d->I = B_SET;
+        d->imm = GETBT(w, 0, 8);
+        if (I_SVC != d->instr) d->imm <<= 1;
+        if (d->cond == 0b1110) return -1;
+        return 0;
+
+    case T_THUMB_BR_UNCOND:
+        d->I = B_SET;
+        d->imm = (GETBT(w, 0, 11) << 1);
         return 0;
 
     }

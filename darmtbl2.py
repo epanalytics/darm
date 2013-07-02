@@ -128,8 +128,6 @@ thumbs = [
     ('AND{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     #('ASR{S}<c>.W <Rd>, <Rm>, #<imm>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), imm3, Rd, imm2, 1, 0, Rm),
     ('ASR{S}<c>.W <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, S, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
-    ('B<c> <label>', 1, 1, 0, 1, cond, imm8),
-    ('B<c> <label>', 1, 1, 1, 0, 0, imm11),
     ('B<c>.W <label>', 1, 1, 1, 1, 0, S, cond, imm6, 1, 0, J1, 0, J2, imm11),
     ('B<c>.W <label>', 1, 1, 1, 1, 0, S, imm10, 1, 0, J1, 1, J2, imm11),
     ('BFC<c> <Rd>, #<lsb>, #<width>', 1, 1, 1, 1, 0, (0), 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, imm3, Rd, imm2, (0), msb),
@@ -156,7 +154,6 @@ thumbs = [
     ('ISB<c> <option>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, (1), (1), (1), (1), 1, 0, (0), 0, (1), (1), (1), (1), 0, 1, 1, 0, option),
     #('IT{<x>{<y>{<z>}}} <firstcond>', 1, 0, 1, 1, 1, 1, 1, 1, firstcond, mask),
     #('IT{<x>{<y>{<z>}}} <firstcond>', 1, 0, 1, 1, 1, 1, 1, 1, firstcond, mask),
-    ('LDM<c> <Rn>, <registers>', 1, 1, 0, 0, 1, Rn, register_list8),
     ('LDM<c>.W <Rn>{!}, <registers>', 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, W, 1, Rn, P, M, (0), register_list),
     ('LDM<c>.W <Rn>{!}, <registers>', 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, W, 1, Rn, P, M, (0), register_list),
     ('LDMDB<c> <Rn>{!}, <registers>', 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, W, 1, Rn, P, M, (0), register_list),
@@ -289,7 +286,6 @@ thumbs = [
     ('SSAX<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('SSUB16<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('SSUB8<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
-    ('STM<c> <Rn>!, <registers>', 1, 1, 0, 0, 0, Rn, register_list),
     ('STM<c>.W <Rn>{!}, <registers>', 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, W, 0, Rn, (0), M, (0), register_list),
     ('STMDB<c> <Rn>{!}, <registers>', 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, W, 0, Rn, (0), M, (0), register_list),
     ('STR<c>.W <Rt>, [<Rn>, #<imm12>]', 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, Rn, Rt, imm12),
@@ -320,7 +316,6 @@ thumbs = [
     #('SUB{S}<c>.W <Rd>, SP, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 1, 0, 1, S, 1, 1, 0, 1, 0, imm3, Rd, imm8),
     ('SUBW<c> <Rd>, SP, #<imm12>', 1, 1, 1, 1, 0, i, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, imm3, Rd, imm8),
     ('SUB{S}<c> <Rd>, SP, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, S, 1, 1, 0, 1, (0), imm3, Rd, imm2, type_, Rm),
-    ('SVC<c> #<imm8>', 1, 1, 0, 1, 1, 1, 1, 1, imm8),
     ('SXTAB<c> <Rd>, <Rn>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, Rn, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
     ('SXTAB16<c> <Rd>, <Rn>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, Rn, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
     ('SXTAH<c> <Rd>, <Rn>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, Rn, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
@@ -465,13 +460,15 @@ thumbs = [
     ('PUSH <registers>', 1, 0, 1, 1, 0, 1, 0, M, register_list8),
 
     # THUMB_LDST_MULTI
+    ('LDM <Rn>!, <registers>', 1, 1, 0, 0, 1, Rn3, register_list8),
+    ('STM <Rn>!, <registers>', 1, 1, 0, 0, 0, Rn3, register_list8),
 
     # THUMB_BR_COND
+    ('B<c> <label>', 1, 1, 0, 1, cond, imm8),
 
     # THUMB_SWINT
+    ('SVC #<imm8>', 1, 1, 0, 1, 1, 1, 1, 1, imm8),
 
     # THUMB_BR_UNCOND
-
-    # THUMB_BR_LONGLNK
-
+    ('B <label>', 1, 1, 1, 0, 0, imm11),
 ]
