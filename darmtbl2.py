@@ -456,7 +456,9 @@ thumbs = [
     ('STR <Rt>, [SP,#+/-<imm8>]', 1, 0, 0, 1, 0, Rt3, imm8),
 
     # THUMB_LOAD_ADDR (like LEA in x86)
-    ('ADD <Rd>, [SP,#+/-<imm8>]', 1, 0, 1, 0, 1, Rd3, imm8),
-    ('ADR <Rd>, [PC,#+/-<imm8>]', 1, 0, 1, 0, 0, Rd3, imm8),
+    ('ADD <Rd>, SP, #<imm8>', 1, 0, 1, 0, 1, Rd3, imm8),
+    ('ADR <Rd>, PC, #<imm8>', 1, 0, 1, 0, 0, Rd3, imm8),
+
+    
     
 ]

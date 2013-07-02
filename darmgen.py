@@ -133,9 +133,12 @@ def format_string(full):
         # it executes is appended to the instruction
         '<c>', 'c',
 
+        # implicitly-used regs
+        'PC', '<Rn>',
+        'SP', '<Rn>',
+
         # memory address
-        '[PC,#+/-<imm8>]', 'p',
-        '[SP,#+/-<imm8>]', 'P',
+        '[<Rn>,#+/-<imm8>]', 'M',
         '[<Rn>,#+/-<imm12>]', 'M',
         '[<Rn>,+/-<Rm>{,<shift>}]', 'M',
 
@@ -223,10 +226,14 @@ def format_string(full):
     full = full[len(instr):]
 
     # apply all rules
-    for k, v in zip(*[iter(rules)]*2):
-        full = full.replace(k, v)
+    while True:
+        f = full
+        for k, v in zip(*[iter(rules)]*2):
+            full = full.replace(k, v)
+        full = full.replace(',', '').replace(' ', '')
+        if f == full:
+            break
 
-    full = full.replace(',', '').replace(' ', '')
     return full
 
 

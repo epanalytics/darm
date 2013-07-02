@@ -338,10 +338,6 @@ int darm_str(const darm_t *d, darm_str_t *str)
             args[arg] += utoa(d->imm, args[arg], 16);
             continue;
 
-        case 'p':
-            if (ch == 'p' && d->Rn != PC) break;
-        case 'P':
-            if (ch == 'P' && d->Rn != SP) break;
         case 'M':
             *args[arg]++ = '[';
             APPEND(args[arg], darm_register_name(d->Rn));
