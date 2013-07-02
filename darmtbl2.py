@@ -89,7 +89,6 @@ D             = Bitsize('D', 1, 'User-defined bit')
 tb            = Bitsize('tb', 1, 'Is PKH in TB form or not?')
 imm4H         = Bitsize('imm4H', 4, 'High Word Register')
 imm4L         = Bitsize('imm4L', 4, 'Low Word Register')
-G             = Bitsize('G', 1, 'Sign for add SP')
 
 i             = Bitsize('imm1', 1, 'Immediate')
 J1            = Bitsize('J1', 1, 'Immediate')
@@ -119,7 +118,6 @@ thumbs = [
     ('ADDW<c> <Rd>, <Rn>, #<imm12>', 1, 1, 1, 1, 0, i, 1, 0, 0, 0, 0, 0, Rn, 0, imm3, Rd, imm8),
     ('ADD{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     ('ADD{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
-    ('ADD<c> SP, SP, #<imm7>', 1, 0, 1, 1, 0, 0, 0, 0, 0, imm7),
     #('ADD{S}<c>.W <Rd>, SP, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 0, 0, S, 1, 1, 0, 1, 0, imm3, Rd, imm8),
     ('ADDW<c> <Rd>, SP, #<imm12>', 1, 1, 1, 1, 0, i, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, imm3, Rd, imm8),
     ('ADD{S}<c>.W <Rd>, SP, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, S, 1, 1, 0, 1, (0), imm3, Rd, imm2, type_, Rm),
@@ -227,10 +225,8 @@ thumbs = [
     ('PLI<c> [<Rn>, #-<imm8>]', 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, Rn, 1, 1, 1, 1, 1, 1, 0, 0, imm8),
     ('PLI<c> <label>', 1, 1, 1, 1, 1, 0, 0, 1, U, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, imm12),
     #('PLI<c> [<Rn>, <Rm>{, LSL #<imm2>}]', 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, Rn, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, imm2, Rm),
-    ('POP<c> <registers>', 1, 0, 1, 1, 1, 1, 0, P, register_list8),
     ('POP<c>.W <registers>', 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, P, M, (0), register_list),
     ('POP<c>.W <registers>', 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, Rt, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0),
-    ('PUSH<c> <registers>', 1, 0, 1, 1, 0, 1, 0, M, register_list8),
     #('PUSH<c>.W <registers>', 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, (0), M, (0), register_list),
     #('PUSH<c>.W <registers>', 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, Rt, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0),
     ('QADD<c> <Rd>, <Rm>, <Rn>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, Rn, 1, 1, 1, 1, Rd, 1, 0, 0, 0, Rm),
@@ -321,7 +317,6 @@ thumbs = [
     ('SUBW<c> <Rd>, <Rn>, #<imm12>', 1, 1, 1, 1, 0, i, 1, 0, 1, 0, 1, 0, Rn, 0, imm3, Rd, imm8),
     #('SUB{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     # TODO:
-    ('SUB<c> SP, SP, #<imm7>', 1, 0, 1, 1, 0, 0, 0, 0, 1, imm7),
     #('SUB{S}<c>.W <Rd>, SP, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 1, 0, 1, S, 1, 1, 0, 1, 0, imm3, Rd, imm8),
     ('SUBW<c> <Rd>, SP, #<imm12>', 1, 1, 1, 1, 0, i, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, imm3, Rd, imm8),
     ('SUB{S}<c> <Rd>, SP, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, S, 1, 1, 0, 1, (0), imm3, Rd, imm2, type_, Rm),
@@ -462,9 +457,12 @@ thumbs = [
     ('ADR <Rd>, PC=<Rn>, #<imm8>', 1, 0, 1, 0, 0, Rd3, imm8),
 
     # THUMB_ADD_SP
-    ('ADD SP=<Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, G, imm7),
+    ('ADD SP=<Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, 0, imm7),
+    ('SUB SP=<Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, 1, imm7),
 
     # THUMB_PSHPOP
+    ('POP <registers>',  1, 0, 1, 1, 1, 1, 0, P, register_list8),
+    ('PUSH <registers>', 1, 0, 1, 1, 0, 1, 0, M, register_list8),
 
     # THUMB_LDST_MULTI
 

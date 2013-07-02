@@ -423,7 +423,9 @@ instr_types = [
     thumb('ADD_SP', 'Add offset to SP',
           ['ins SP,SP,#+/-<imm7>'],
           lambda x, y, z: x[0:8] == (1, 0, 1, 1, 0, 0, 0, 0)),
-
+    thumb('PSHPOP', 'Push/pop registers to stack',
+          ['ins <registers'],
+          lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:7] == (1, 0)),
 ]
 
 if __name__ == '__main__':

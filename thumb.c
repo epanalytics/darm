@@ -189,8 +189,15 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         d->Rn = SP;
         d->I = B_SET;
         d->imm = GETBT(w, 0, 7);
-        if (GETBT(w, 7, 1)){
-            d->imm *= -1;
+        return 0;
+
+    case T_THUMB_PSHPOP:
+        // TODO: implicit SP def/use
+        d->reglist = GETBT(w, 0, 8);
+        if (GETBT(w, 8, 1)){
+            if (I_PUSH == d->instr) d->reglist |= (1 << LR);
+            else if (I_POP == d->instr) d->reglist |= (1 << PC);
+            else return -1;
         }
         return 0;
 
