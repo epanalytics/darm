@@ -89,6 +89,7 @@ D             = Bitsize('D', 1, 'User-defined bit')
 tb            = Bitsize('tb', 1, 'Is PKH in TB form or not?')
 imm4H         = Bitsize('imm4H', 4, 'High Word Register')
 imm4L         = Bitsize('imm4L', 4, 'Low Word Register')
+G             = Bitsize('G', 1, 'Sign for add SP')
 
 i             = Bitsize('imm1', 1, 'Immediate')
 J1            = Bitsize('J1', 1, 'Immediate')
@@ -384,6 +385,7 @@ thumbs = [
 ]
 
 # just thumb1 here
+# https://ece.uwaterloo.ca/~ece222/ARM/ARM7-TDMI-manual-pt3.pdf
 # helpful table: http://www.ittc.ku.edu/~kulkarni/research/thumb_ax.pdf
 # TODO: INS{S} allows disasm to set S for both darm_t and printing, INSS forces print (but doesn't set the darm_t necessarily?)
 thumbs = [
@@ -459,6 +461,19 @@ thumbs = [
     ('ADD <Rd>, SP, #<imm8>', 1, 0, 1, 0, 1, Rd3, imm8),
     ('ADR <Rd>, PC, #<imm8>', 1, 0, 1, 0, 0, Rd3, imm8),
 
-    
-    
+    # THUMB_ADD_SP
+    ('ADD SP, SP, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, G, imm7),
+
+    # THUMB_PSHPOP
+
+    # THUMB_LDST_MULTI
+
+    # THUMB_BR_COND
+
+    # THUMB_SWINT
+
+    # THUMB_BR_UNCOND
+
+    # THUMB_BR_LONGLNK
+
 ]

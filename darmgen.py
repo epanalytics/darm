@@ -416,6 +416,9 @@ instr_types = [
     thumb('LOAD_ADDR', 'Calculate memory address',
           ['ins <Rd>,SP,#<imm8>', 'ins <Rd>,PC,#<imm8>'],
           lambda x, y, z: x[0:4] == (1, 0, 1, 0)),
+    thumb('ADD_SP', 'Add offset to SP',
+          ['ins SP,SP,#+/-<imm7>'],
+          lambda x, y, z: x[0:8] == (1, 0, 1, 1, 0, 0, 0, 0)),
 
 ]
 

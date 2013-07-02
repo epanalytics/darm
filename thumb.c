@@ -182,6 +182,16 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         }
         return 0;
 
+    case T_THUMB_ADD_SP:
+        d->Rd = SP;
+        d->Rn = SP;
+        d->I = B_SET;
+        d->imm = GETBT(w, 0, 7);
+        if (GETBT(w, 7, 1)){
+            d->imm *= -1;
+        }
+        return 0;
+
     }
     return -1;
 }
