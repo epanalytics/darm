@@ -359,6 +359,7 @@ ARMv7 = [
 ]
 
 if __name__ == '__main__':
+    num = 0
     for description in ARMv7:
         instr = description[0]
         bits = description[1:]
@@ -366,3 +367,6 @@ if __name__ == '__main__':
         bits = [1 if type(x) == int else x.bitsize for x in bits]
         if sum(bits) != 32:
             print(instr, bits, sum(bits))
+        num += 1
+    print "Verified " + str(num) + " armv7 instructions"
+    return 0

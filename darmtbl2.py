@@ -472,3 +472,16 @@ thumbs = [
     # THUMB_BR_UNCOND
     ('B <label>', 1, 1, 1, 0, 0, imm11),
 ]
+
+if __name__ == '__main__':
+    num = 0
+    for description in thumbs:
+        instr = description[0]
+        bits = description[1:]
+
+        bits = [1 if type(x) == int else x.bitsize for x in bits]
+        if sum(bits) != 16:
+            print(instr, bits, sum(bits))
+        num += 1
+    print "Verified " + str(num) + " thumb1 instructions"
+    return 0
