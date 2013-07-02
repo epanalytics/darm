@@ -63,9 +63,6 @@ int darm_str(const darm_t *d, darm_str_t *str)
         return -1;
     }
 
-    // the format string index
-    uint32_t idx = 0;
-
     // the offset in the format string
     uint32_t off = 0;
 
@@ -81,16 +78,14 @@ int darm_str(const darm_t *d, darm_str_t *str)
 
     char *shift = str->shift;
 
-    const char **ptrs = NULL;
+    const char* ptr = NULL;
     if(d->isthumb)
-        ptrs = thumb_format_strings[d->instr];
-    else 
-        ptrs = armv7_format_strings[d->instr];
-    if(ptrs[0] == NULL) return -1;
+        ptr = thumb_instr_formats[(d->w >> 8 ) & 0b11111111];
+    else
+        ptr = armv7_instr_formats[(d->w >> 24) & 0b11111111];
+    if(ptr == NULL) return -1;
 
-    // TODO: this makes assumptions about the similarity in format between
-    // versions of the same insn that do not seem to hold for thumb
-    for (char ch; (ch = ptrs[idx][off]) != 0; off++) {
+    for (char ch; (ch = ptr[off]) != 0; off++) {
         //printf("got %c %d\n", ch, ch);
         switch (ch) {
         case 's':
@@ -174,13 +169,6 @@ int darm_str(const darm_t *d, darm_str_t *str)
                 args[arg] += utoa(d->imm, args[arg], 10);
             }
             arg++;
-            continue;
-
-        case 'P':
-            // stack pointer is implicit
-            APPEND(args[arg], darm_register_name(SP));
-            arg++;
-            off++;
             continue;
 
         case 'S':
@@ -350,6 +338,10 @@ int darm_str(const darm_t *d, darm_str_t *str)
             args[arg] += utoa(d->imm, args[arg], 16);
             continue;
 
+        case 'p':
+            if (ch == 'p' && d->Rn != PC) break;
+        case 'P':
+            if (ch == 'P' && d->Rn != SP) break;
         case 'M':
             *args[arg]++ = '[';
             APPEND(args[arg], darm_register_name(d->Rn));
@@ -390,10 +382,6 @@ int darm_str(const darm_t *d, darm_str_t *str)
         default:
             return -1;
         }
-
-        // TODO: there are many insns with arrays < and > 3
-        if(ptrs[++idx] == NULL || idx == 3) return -1;
-        off--;
     }
 
     *mnemonic = *args[0] = *args[1] = *args[2] = *args[3] = *shift = 0;

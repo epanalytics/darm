@@ -102,6 +102,7 @@ int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
         d->Rn = (w>>3) & 0b111;
         d->Rm = (w>>6) & 0b111;
         return 0;
+        /*
     case T_THUMB_ARITH_STACK:
         d->Rn = SP;
         d->I = B_SET;
@@ -116,6 +117,7 @@ int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
             d->imm = (w & BITMSK_7) << 2;
             return 0;
         }
+        */
     }
     return -1;
 }

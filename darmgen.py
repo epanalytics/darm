@@ -55,7 +55,7 @@ def typed_table(typ, name, arr):
     # if it's not a pointer, append a space
     if typ[-1] != '*':
         typ += ' '
-    return '%s%s[] = {\n    %s\n};\n' % (typ, name, text)
+    return '%s %s[] = {\n    %s\n};\n' % (typ, name, text)
 
 
 def string_table(name, arr):
@@ -81,13 +81,17 @@ def instruction_types_table(arr, kind):
            for x in range(256)]
     return typed_table('darm_enctype_t', '%s_instr_types' % kind, arr)
 
-
 def instruction_names_index_table(arr, kind):
     """Lookup table for instruction label for each instruction index."""
     arr = ['I_%s' % arr[x][0] if x in arr else 'I_INVLD'
            for x in range(256)]
     return typed_table('darm_instr_t', '%s_instr_labels' % kind, arr)
 
+def instruction_format_strings_table(arr, kind):
+    """Format string for each instruction index."""
+    arr = ['"%s"' % arr[x][2] if x in arr else 'NULL'
+           for x in range(256)]
+    return typed_table('const char*', '%s_instr_formats' % kind, arr)
 
 def type_lookup_table(name, *args):
     """Create a lookup table for a certain instruction type."""
@@ -117,9 +121,7 @@ def type_encoding_table(tblname, arr):
     return string_table(tblname, (x[1] for x in arr))
 
 
-def generate_format_strings(arr):
-    ret = {}
-
+def format_string(full):
     # a set of rules to transform a string representation as given by the
     # armv7 manual, into our own custom format string
     rules = [
@@ -132,6 +134,8 @@ def generate_format_strings(arr):
         '<c>', 'c',
 
         # memory address
+        '[PC,#+/-<imm8>]', 'p',
+        '[SP,#+/-<imm8>]', 'P',
         '[<Rn>,#+/-<imm12>]', 'M',
         '[<Rn>,+/-<Rm>{,<shift>}]', 'M',
 
@@ -140,6 +144,7 @@ def generate_format_strings(arr):
         '[<Rn>]', 'B',
         '#+/-<imm12>', 'O',
         '#+/-<imm8>', 'O',
+        '#+/-<imm5>', 'O',
         '+/-<Rm>', 'O',
 
         # various register operands
@@ -168,9 +173,6 @@ def generate_format_strings(arr):
         '#<imm12>', 'i',
         '#<imm16>', 'i',
         '#<imm24>', 'i',
-
-        # stack pointer
-        'SP', 'P',
 
         # immediate and register shift
         '{,<shift>}', 'S',
@@ -215,26 +217,17 @@ def generate_format_strings(arr):
         '<T>', 'T',
     ]
 
-    for row in arr:
-        full = row[0]
+    instr = instruction_name(full)
 
-        instr = instruction_name(full)
+    # strip the instruction
+    full = full[len(instr):]
 
-        # strip the instruction
-        full = full[len(instr):]
+    # apply all rules
+    for k, v in zip(*[iter(rules)]*2):
+        full = full.replace(k, v)
 
-        # apply all rules
-        for k, v in zip(*[iter(rules)]*2):
-            full = full.replace(k, v)
-
-        full = full.replace(',', '').replace(' ', '')
-        if instr not in ret:
-            ret[instr] = [full]
-        elif ret[instr][0] == full[:len(ret[instr][0])]:
-            ret[instr][0] = full
-        else:
-            ret[instr].append(full)
-    return ret
+    full = full.replace(',', '').replace(' ', '')
+    return full
 
 
 def magic_open(fname):
@@ -284,7 +277,7 @@ instr_types = [
           ['ins<c> <Rt>,[<Rn>,#+/-<imm12>]', 'ins<c> <Rt>,[<Rn>],#+/-<imm12>',
            'ins<c> <Rt>,[<Rn>],+/-<Rm>{,<shift>}'],
           lambda x, y, z: x[1:3] == (0, 1) and not (x[3] == 1 == x[-2])),
-    armv7('STACK1', 'Various unprivileged STR and LDR instructions',
+    armv7('STACK1', 'Various unprivilege STR and LDR instructions',
           ['ins<c> <Rt>,[<Rn>],+/-<Rm>', 'ins<c> <Rt>,[<Rn>]{,#+/-<imm8>}'],
           lambda x, y, z: x[-5] == 1 and x[-2] == 1 and x[-4:-2] != (0, 0) and
           x[1:5] == (0, 0, 0, 0) and x[7] == 1),
@@ -384,11 +377,6 @@ instr_types = [
            'ins{S} <Rd3>, <Rn3>, <Rm3>',
            'ins <Rd3>, <Rn3>, <Rm3>'],
           lambda x, y, z: x[0:5] == (0,0,0,1,1) and x[-3:] == (d2.Rm3, d2.Rn3, d2.Rd3)),
-    # TODO: ARITH_STACK is a hack
-    thumb('ARITH_STACK',
-          'Arithmetic instructions that use the stack',
-          ['ins{S}<c> <Rd>,SP,#<const>'],
-          lambda x, y, z: y.find('SP') > 0),
 
     # TODO: remaining thumb1
     thumb('DST_SRC', 'Manipulate and move a register to another register',
@@ -406,9 +394,22 @@ instr_types = [
     thumb('HIREG_BX', 'Hi register operations/branch exchange',
           ['ins <Rd>,<Rm>', 'ins <Rdn> <Rm>', 'ins <Rm>'],
           lambda x, y, z: x[0:6] == (0, 1, 0, 0, 0, 1)),
-    thumb('LOAD', 'PC-relative load',
-          ['ins <Rt>,<label>'],
+    thumb('LOAD_PCREL', 'PC-relative load',
+          ['ins <Rt>,[PC,#+/-<imm8>]'],
           lambda x, y, z: x[0:5] == (0, 1, 0, 0, 1)),
+    thumb('LDST_REG', 'Load/store with register offset',
+          ['ins <Rt>,[<Rn>,<Rm>]'],
+          lambda x, y, z: x[0:4] == (0, 1, 0, 1)),
+    thumb('LDST_IMM', 'Load/store with immediate offset',
+          ['ins <Rt>,[<Rn>]', 'ins <Rt>,[<Rn>,#+/-<imm5>]'],
+          lambda x, y, z: x[0:3] == (0, 1, 1) or x[0:4] == (1, 0, 0, 0)),
+    thumb('LDST_SPREL', 'SP-relative load/store',
+          ['ins <Rt>,[SP,#+/-<imm8>]'],
+          lambda x, y, z: x[0:4] == (1, 0, 0, 1)),
+    thumb('LOAD_ADDR', 'Calculate memory address',
+          ['ins <Rd>,SP,#<imm8>', 'ins <Rd>,PC,#<imm8>'],
+          lambda x, y, z: x[0:4] == (1, 0, 1, 0)),
+
 ]
 
 if __name__ == '__main__':
@@ -459,7 +460,7 @@ if __name__ == '__main__':
             for y in instr_types:
                 if y[0] == 1 and bits[0] == d.cond and y[4](bits, instr, idx):
                     if not y[1] in type_ignore:
-                        armv7_table[idx] = instruction_name(instr), y
+                        armv7_table[idx] = instruction_name(instr), y, format_string(instr)
                     y[-1].append(instr)
                     break
 
@@ -468,7 +469,8 @@ if __name__ == '__main__':
         bits = description[1:]
 
         bitcount = sum(1 if isinstance(x, int) else x.bitsize for x in bits)
-        if bitcount in (16, 17, 18, 19):
+        assert(bitcount == 16 and 'thumb1 instructions must be 16-bit')
+        if bitcount == 16:
             # TODO fix >16
             identifier, remainder = [], []
             for x in range(len(bits)):
@@ -483,7 +485,7 @@ if __name__ == '__main__':
                 idx = sum(int(x[y])*2**(7-y) for y in range(8))
                 for y in (_ for _ in instr_types if _[0] == 2):
                     if y[4](bits, instr, 0):
-                        thumb_table[idx] = instruction_name(instr), y
+                        thumb_table[idx] = instruction_name(instr), y, format_string(instr)
                         # debug matching
                         #print instr, thumb_table[idx]
                         y[-1].append(instr)
@@ -498,7 +500,6 @@ if __name__ == '__main__':
 
     magic_open('darm-tbl.h')
 
-    fmtstrs = generate_format_strings(darmtbl.ARMv7)
     # until we remove all unused instructions..
     instrcnt = len(open('instructions.txt').readlines())
 
@@ -537,7 +538,7 @@ if __name__ == '__main__':
 
     # print required headers
     print('#ifndef __THUMB_TBL__')
-    print('#define __THUMB_TBL__')
+    print('#define __STHUMB_TBL__')
     print('#include <stdint.h>')
     print('#include "darm-tbl.h"')
 
@@ -546,8 +547,6 @@ if __name__ == '__main__':
     print('extern darm_instr_t thumb_instr_labels[256];')
     print('extern const char *thumb_registers[9];')
 
-    thumb_fmtstrs = generate_format_strings(darmtbl2.thumbs)
-    print('const char *thumb_format_strings[%d][3];' % instrcnt)
     print('#endif')
 
     #
@@ -587,7 +586,8 @@ if __name__ == '__main__':
 
     type_lut_thumb('alu', 4)
     
-    print('extern const char *armv7_format_strings[%d][3];' % instrcnt)
+    print('extern const char* armv7_instr_formats[256];')
+    print('extern const char* thumb_instr_formats[256];')
 
     print('#endif')
 
@@ -623,13 +623,7 @@ if __name__ == '__main__':
     # print a table containing the instruction label for each entry
     print(instruction_names_index_table(thumb_table, 'thumb'))
 
-    lines = []
-    for instr, fmtstr in thumb_fmtstrs.items():
-        fmtstr = ', '.join('"%s"' % x for x in set(fmtstr))
-        lines.append('    [I_%s] = {%s},' % (instr, fmtstr))
-    print('const char *thumb_format_strings[%d][3] = {' % instrcnt)
-    print('\n'.join(sorted(lines)))
-    print('};')
+    print(instruction_format_strings_table(thumb_table, 'thumb'))
 
     #
     # armv7-tbl.c
@@ -645,6 +639,7 @@ if __name__ == '__main__':
 
     # print a table containing the instruction label for each entry
     print(instruction_names_index_table(armv7_table, 'armv7'))
+    print(instruction_format_strings_table(armv7_table, 'armv7'))
 
     # print a lookup table for the shift type (which is a sub-type of
     # the dst-src type), the None types represent instructions of the
@@ -761,16 +756,6 @@ if __name__ == '__main__':
 
 
 
-    # TODO: fill this in
-    t_alu = None, None, None, None, None, None, None, None, \
-        None, None, None, None, None, None, None, None
+    t_alu = 'and', 'eor', 'lsl', 'lsr', 'asr', 'adc', 'sbc', 'ror', \
+        'tst', 'rsb', 'cmp', 'cmn', 'orr', 'mul', 'bic', 'mvn'
     print type_lookup_table('type_thumb_alu', *t_alu)
-
-
-    lines = []
-    for instr, fmtstr in fmtstrs.items():
-        fmtstr = ', '.join('"%s"' % x for x in set(fmtstr))
-        lines.append('    [I_%s] = {%s},' % (instr, fmtstr))
-    print('const char *armv7_format_strings[%d][3] = {' % instrcnt)
-    print('\n'.join(sorted(lines)))
-    print('};')

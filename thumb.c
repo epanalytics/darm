@@ -54,8 +54,9 @@ static int thumb_disasm(darm_t *d, uint16_t w)
     d->size = 2;
     d->cond = C_AL;
 
+    // TODO: always set S for all of certain kinds of instrs (CMP and friends)?
     // TODO: handle thumb1 here only?
-    // TODO: only need name lookups when >8 bits?
+
     switch ((uint32_t) d->instr_type){
 
     case T_THUMB_DST_SRC:
@@ -133,15 +134,54 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         }
         return 0;
 
-    case T_THUMB_LOAD:
+    case T_THUMB_LOAD_PCREL:
+        d->P = B_SET;
         d->Rt = GETBT(w, 8, 3);
         d->I = B_SET;
         d->imm = (GETBT(w, 0, 8) << 2);
-        // TODO: is this a good way of expressing PC-relativity?
         d->Rn = PC;
         return 0;
 
-        
+    case T_THUMB_LDST_REG:
+        d->P = B_SET;
+        d->Rt = GETBT(w, 0, 3);
+        d->Rn = GETBT(w, 3, 3);
+        d->Rm = GETBT(w, 6, 3);
+        return 0;
+
+    case T_THUMB_LDST_IMM:
+        d->P = B_SET;
+        d->Rt = GETBT(w, 0, 3);
+        d->Rn = GETBT(w, 3, 3);
+        d->I = B_SET;
+        if (I_LDRB == d->instr || I_STRB == d->instr){
+            d->imm = (GETBT(w, 6, 5) << 0);
+        } else if (I_LDRH == d->instr || I_STRH == d->instr){
+            d->imm = (GETBT(w, 6, 5) << 1);
+        } else if (I_LDR == d->instr || I_STR == d->instr){
+            d->imm = (GETBT(w, 6, 5) << 2);
+        } else {
+            return -1;
+        }
+        return 0;        
+
+    case T_THUMB_LDST_SPREL:
+    case T_THUMB_LOAD_ADDR:
+        if (I_ADD == d->instr || I_ADR == d->instr){
+            d->P = B_INVLD;
+            d->Rd = GETBT(w, 8, 3);
+        } else {
+            d->P = B_SET;
+            d->Rt = GETBT(w, 8, 3);
+        }
+        d->I = B_SET;
+        d->imm = (GETBT(w, 0, 8) << 2);
+        d->Rn = SP;
+        if (I_ADR == d->instr){
+            d->Rn = PC;
+        }
+        return 0;
+
     }
     return -1;
 }
