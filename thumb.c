@@ -54,9 +54,13 @@ POSSIBILITY OF SUCH DAMAGE.
 static int thumb_disasm(darm_t *d, uint16_t w)
 {
     uint8_t h1, h2, r1, r2;
+    darm_lookup_t* lkup;
 
-    d->instr = thumb_instr_labels[w >> 8];
-    d->instr_type = thumb_instr_types[w >> 8];
+    lkup = &(thumb_instr_lookup[w >> 6]);
+    if (I_INVLD == lkup->instr) return -1;
+
+    d->instr = lkup->instr;
+    d->instr_type = lkup->instr_type;
     d->isthumb = 1;
     d->size = 2;
     d->cond = C_AL;
@@ -195,7 +199,7 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         d->Rd = SP;
         d->Rn = SP;
         d->I = B_SET;
-        d->imm = GETBT(w, 0, 7);
+        d->imm = (GETBT(w, 0, 7) << 2);
         return 0;
 
     case T_THUMB_PSHPOP:

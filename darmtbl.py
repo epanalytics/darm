@@ -369,4 +369,3 @@ if __name__ == '__main__':
             print(instr, bits, sum(bits))
         num += 1
     print "Verified " + str(num) + " armv7 instructions"
-    return 0

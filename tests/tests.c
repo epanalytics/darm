@@ -210,14 +210,14 @@ struct {
         .instr = I_BKPT, .instr_type = T_THUMB_ONLY_IMM8, .I = B_SET,
         .cond = C_AL, .imm = 3}},
     {0xb5f0, 0, {
-        .instr = I_PUSH, .instr_type = T_THUMB_PUSHPOP, .cond = C_AL,
+        .instr = I_PUSH, .instr_type = T_THUMB_PSHPOP, .cond = C_AL,
         .reglist=0b100000011110000}},
     {0x264c, 0, {
-        .instr = I_MOVS, .instr_type = T_THUMB_REG_IMM, .I = B_SET,
-        .cond = C_AL, .Rd = 6, .imm = 0x4c}},
+        .instr = I_MOVS, .instr_type = T_THUMB_ARITH_IMM, .I = B_SET,
+        .S = B_SET, .cond = C_AL, .Rd = 6, .imm = 0x4c}},
     {0x1ae3, 0, {
-        .instr = I_SUBS, .instr_type = T_THUMB_ARITH_REG_REG, .cond = C_AL,
-        .Rd = 3, .Rn = 4, .Rm = 3}},
+        .instr = I_SUBS, .instr_type = T_THUMB_ARITH, .cond = C_AL,
+        .S = B_SET, .Rd = 3, .Rn = 4, .Rm = 3}},
 };
 
 static int _darm_thumb_disasm(darm_t *d, uint32_t w)

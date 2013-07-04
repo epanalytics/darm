@@ -27,11 +27,37 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
 import darmtbl
-import darmtbl2
+import darmtblthumb
 import itertools
+import string
 import sys
 import textwrap
 
+thumb_lookup_bits = 10
+
+def struct_definition(name, arr):
+    a = arr
+    return 'typedef struct _%s {\n' % (name) +\
+        string.join(['    ' + a[i][1] + '  ' + a[i][0] + ';' for i in range(len(arr))], '\n') +\
+        '} %s;\n\n' % (name)
+
+def instruction_lookup_table(arr, size, kind):
+    """Lookup table for all relevant instruction features."""    
+    values = []
+    for k in range(size):
+        s = ''
+        if not arr.has_key(k):
+            s += '{ I_INVLD, T_INVLD, NULL}'
+        else:
+            a = arr[k]
+            s += '{ I_%s, T_%s, "%s"}' % (a[0], a[1][1], a[2])
+        if k < size-1:
+            s += ','
+        s = '/* %03X */ ' % (k) + s
+        values.append(s)
+
+    return 'darm_lookup_t %s_instr_lookup[%d] = {' % (kind, size) + \
+        '\n' + string.join(values, '\n') + '\n};'
 
 def instruction_name(x):
     return x.split('{')[0].split('<')[0].split()[0]
@@ -119,7 +145,6 @@ def type_encoding_enum(enumname, arr):
 def type_encoding_table(tblname, arr):
     """Table of strings of all instructions."""
     return string_table(tblname, (x[1] for x in arr))
-
 
 def format_string(full):
     # a set of rules to transform a string representation as given by the
@@ -226,20 +251,41 @@ def format_string(full):
 
     instr = instruction_name(full)
 
-    # strip the instruction
-    full = full[len(instr):]
-
-    # apply all rules
     while True:
         f = full
+
+        # apply all rules
         for k, v in zip(*[iter(rules)]*2):
             full = full.replace(k, v)
+
         full = full.replace(',', '').replace(' ', '')
+
         if f == full:
             break
 
+    # strip the instruction
+    full = full[len(instr):]
+
     return full
 
+
+def generate_format_strings(arr):
+    ret = {}
+
+    for row in arr:
+        full = row[0]
+
+        instr = instruction_name(full)
+        full = format_string(full)
+
+        if instr not in ret:
+            ret[instr] = [full]
+        elif ret[instr][0] == full[:len(ret[instr][0])]:
+            ret[instr][0] = full
+        else:
+            ret[instr].append(full)
+
+    return ret
 
 def magic_open(fname):
     # python magic!
@@ -251,8 +297,7 @@ def magic_open(fname):
     print('*/')
 
 d = darmtbl
-d2 = darmtbl2
-
+d2 = darmtblthumb
 
 def notype(*x):
     return (0,) + x
@@ -288,7 +333,7 @@ instr_types = [
           ['ins<c> <Rt>,[<Rn>,#+/-<imm12>]', 'ins<c> <Rt>,[<Rn>],#+/-<imm12>',
            'ins<c> <Rt>,[<Rn>],+/-<Rm>{,<shift>}'],
           lambda x, y, z: x[1:3] == (0, 1) and not (x[3] == 1 == x[-2])),
-    armv7('STACK1', 'Various unprivilege STR and LDR instructions',
+    armv7('STACK1', 'Various unprivileged STR and LDR instructions',
           ['ins<c> <Rt>,[<Rn>],+/-<Rm>', 'ins<c> <Rt>,[<Rn>]{,#+/-<imm8>}'],
           lambda x, y, z: x[-5] == 1 and x[-2] == 1 and x[-4:-2] != (0, 0) and
           x[1:5] == (0, 0, 0, 0) and x[7] == 1),
@@ -370,29 +415,10 @@ instr_types = [
            'ins<c> <Rd>,<Rm>{,<rotation>}'],
           lambda x, y, z: x[1:6] == (0, 1, 1, 0, 1)),
 
-    # TODO: distinguish between thumb1/thumb2
-    thumb('ONLY_IMM8', 'Instructions which only take an 8-byte immediate',
-          ['ins<c> #<imm8>'],
-          lambda x, y, z: d2.imm8 in x and len(x) == 9),
-    thumb('PUSHPOP', 'Push and pop instruction',
-          ['ins<c> <registers>'],
-          lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:7] == (1, 0) and x[-1] == d2.register_list8),
-    thumb('REG_IMM', 'Apply immediate to a register',
-          ['ins <Rd3>,#<const>',
-           'ins{S}<c> <Rd>,#<const>',
-           'ins{S}<c> <Rd3>,#<const>',
-           'ins{S}<c> <Rdn>,#<const>'],	
-          lambda x, y, z: x[0:3] == (0, 0, 1) and x[-1] == d2.imm8 and x[-2] in (d2.Rd, d2.Rd3, d2.Rdn)),
-    thumb('ARITH_REG_REG', 'Arithmetic with registers',
-          ['ins{S}<c> <Rd>,<Rn>,<Rm>',
-           'ins{S} <Rd3>, <Rn3>, <Rm3>',
-           'ins <Rd3>, <Rn3>, <Rm3>'],
-          lambda x, y, z: x[0:5] == (0,0,0,1,1) and x[-3:] == (d2.Rm3, d2.Rn3, d2.Rd3)),
-
     # thumb1
     thumb('DST_SRC', 'Manipulate and move a register to another register',
           ['ins{S} <Rd>,<Rm>', 'ins{S} <Rd>,<Rm>,#<imm>'],
-          lambda x, y, z: x[0:3] == (0, 0, 0) and x[4:6] != (1, 1)),
+          lambda x, y, z: x[0:3] == (0, 0, 0) and x[3:5] != (1, 1)),
     thumb('ARITH', 'Add/subtract',
           ['ins{S} <Rd>,<Rm>', 'ins{S} <Rd>,<Rm>,#<imm3>', 'ins{S} <Rd>,<Rm>,<Rn>'],
           lambda x, y, z: x[0:5] == (0, 0, 0, 1, 1)),
@@ -431,13 +457,33 @@ instr_types = [
           lambda x, y, z: x[0:4] == (1, 1, 0, 0)),
     thumb('BR_COND', 'Conditional branch',
           ['ins<c> <label>'],
-          lambda x, y, z: x[0:4] == (1, 1, 0, 1) and x[5:9] != (1, 1, 1, 1)),
+          lambda x, y, z: x[0:4] == (1, 1, 0, 1) and x[4:8] != (1, 1, 1, 1)),
     thumb('SWINT', 'Software interrupt',
           ['ins #<imm8>'],
           lambda x, y, z: x[0:8] == (1, 1, 0, 1, 1, 1, 1, 1)),
     thumb('BR_UNCOND', 'Unconditional branch',
           ['ins <label>'],
           lambda x, y, z: x[0:5] == (1, 1, 1, 0, 0)),
+
+    # TODO: distinguish between thumb1/thumb2
+    thumb('ONLY_IMM8', 'Instructions which only take an 8-byte immediate',
+          ['ins<c> #<imm8>'],
+          lambda x, y, z: d2.imm8 in x and len(x) == 9),
+    thumb('PUSHPOP', 'Push and pop instruction',
+          ['ins<c> <registers>'],
+          lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:7] == (1, 0) and x[-1] == d2.register_list8),
+    thumb('REG_IMM', 'Apply immediate to a register',
+          ['ins <Rd3>,#<const>',
+           'ins{S}<c> <Rd>,#<const>',
+           'ins{S}<c> <Rd3>,#<const>',
+           'ins{S}<c> <Rdn>,#<const>'],	
+          lambda x, y, z: x[0:3] == (0, 0, 1) and x[-1] == d2.imm8 and x[-2] in (d2.Rd, d2.Rd3, d2.Rdn)),
+    thumb('ARITH_REG_REG', 'Arithmetic with registers',
+          ['ins{S}<c> <Rd>,<Rn>,<Rm>',
+           'ins{S} <Rd3>, <Rn3>, <Rm3>',
+           'ins <Rd3>, <Rn3>, <Rm3>'],
+          lambda x, y, z: x[0:5] == (0,0,0,1,1) and x[-3:] == (d2.Rm3, d2.Rn3, d2.Rd3)),
+
 ]
 
 if __name__ == '__main__':
@@ -488,11 +534,11 @@ if __name__ == '__main__':
             for y in instr_types:
                 if y[0] == 1 and bits[0] == d.cond and y[4](bits, instr, idx):
                     if not y[1] in type_ignore:
-                        armv7_table[idx] = instruction_name(instr), y, format_string(instr)
+                        armv7_table[idx] = instruction_name(instr), y
                     y[-1].append(instr)
                     break
 
-    for description in darmtbl2.thumbs:
+    for description in darmtblthumb.thumbs:
         instr = description[0]
         bits = description[1:]
 
@@ -504,19 +550,20 @@ if __name__ == '__main__':
             for x in range(len(bits)):
                 if isinstance(bits[x], int):
                     identifier.append(str(bits[x]))
-                elif len(identifier) + bits[x].bitsize > 8:
-                    identifier += ['01'] * (8-len(identifier))
+                elif len(identifier) + bits[x].bitsize > thumb_lookup_bits:
+                    identifier += ['01'] * (thumb_lookup_bits-len(identifier))
                     remainder = bits[x:]
                 else:
                     identifier += ['01'] * bits[x].bitsize
-            for x in itertools.product(*identifier[:8]):
-                idx = sum(int(x[y])*2**(7-y) for y in range(8))
+            for x in itertools.product(*identifier[:thumb_lookup_bits]):
+                idx = sum(int(x[y])*2**(thumb_lookup_bits-1-y) for y in range(thumb_lookup_bits))
                 for y in (_ for _ in instr_types if _[0] == 2):
                     if y[4](bits, instr, 0):
-                        thumb_table[idx] = instruction_name(instr), y, format_string(instr)
+                        thumb_table[idx] = [instruction_name(instr), y, format_string(instr)]
                         # debug matching
                         #print instr, thumb_table[idx]
                         y[-1].append(instr)
+                        break
 
     # make a list of unique instructions affected by each encoding type,
     # we remove the first item from the instruction names, as this is I_INVLD
@@ -528,6 +575,7 @@ if __name__ == '__main__':
 
     magic_open('darm-tbl.h')
 
+    fmtstrs = generate_format_strings(darmtbl.ARMv7)
     # until we remove all unused instructions..
     instrcnt = len(open('instructions.txt').readlines())
 
@@ -556,6 +604,11 @@ if __name__ == '__main__':
             num = ''.join(y)
             print('#define b%s %d' % (num, int(num, 2)))
 
+    print(struct_definition('darm_lookup_t',\
+                                [['instr', 'uint32_t'],\
+                                ['instr_type', 'uint32_t'],\
+                                ['format', 'char*']]))
+
     print('#endif')
 
     #
@@ -566,14 +619,13 @@ if __name__ == '__main__':
 
     # print required headers
     print('#ifndef __THUMB_TBL__')
-    print('#define __STHUMB_TBL__')
+    print('#define __THUMB_TBL__')
     print('#include <stdint.h>')
     print('#include "darm-tbl.h"')
 
     # print some required definitions
-    print('extern darm_enctype_t thumb_instr_types[256];')
-    print('extern darm_instr_t thumb_instr_labels[256];')
     print('extern const char *thumb_registers[9];')
+    print('extern darm_lookup_t thumb_instr_lookup[%d];' % (2**thumb_lookup_bits))
 
     print('#endif')
 
@@ -591,11 +643,8 @@ if __name__ == '__main__':
 
     # print some required definitions
     print('extern darm_enctype_t armv7_instr_types[256];')
-    print('extern darm_enctype_t thumb2_instr_types[256];')
     def type_lut(name, bits):
         print('extern darm_instr_t type_%s_instr_lookup[%d];' % (name, 2**bits))
-    def type_lut_thumb(name, bits):
-        print('extern darm_instr_t type_thumb_%s_instr_lookup[%d];' % (name, 2**bits))
 
     print('extern darm_instr_t armv7_instr_labels[256];')
     type_lut('shift', 4)
@@ -612,11 +661,7 @@ if __name__ == '__main__':
     type_lut('sync', 4)
     type_lut('pusr', 4)
 
-    type_lut_thumb('alu', 4)
-    
-    print('extern const char* armv7_instr_formats[256];')
-    print('extern const char* thumb_instr_formats[256];')
-
+    print('extern const char *armv7_format_strings[%d][3];' % instrcnt)
     print('#endif')
 
     #
@@ -645,13 +690,9 @@ if __name__ == '__main__':
     reg = 'r0 r1 r2 r3 r4 r5 r6 r7 LR'
     print(string_table('thumb_registers', reg.split()))
 
-    # print a table containing all the types of instructions
-    print(instruction_types_table(thumb_table, 'thumb'))
+    # single structure for all lookups
+    print(instruction_lookup_table(thumb_table, 2**thumb_lookup_bits, 'thumb'))
 
-    # print a table containing the instruction label for each entry
-    print(instruction_names_index_table(thumb_table, 'thumb'))
-
-    print(instruction_format_strings_table(thumb_table, 'thumb'))
 
     #
     # armv7-tbl.c
@@ -667,7 +708,6 @@ if __name__ == '__main__':
 
     # print a table containing the instruction label for each entry
     print(instruction_names_index_table(armv7_table, 'armv7'))
-    print(instruction_format_strings_table(armv7_table, 'armv7'))
 
     # print a lookup table for the shift type (which is a sub-type of
     # the dst-src type), the None types represent instructions of the
@@ -787,3 +827,11 @@ if __name__ == '__main__':
     t_alu = 'and', 'eor', 'lsl', 'lsr', 'asr', 'adc', 'sbc', 'ror', \
         'tst', 'rsb', 'cmp', 'cmn', 'orr', 'mul', 'bic', 'mvn'
     print type_lookup_table('type_thumb_alu', *t_alu)
+
+    lines = []
+    for instr, fmtstr in fmtstrs.items():
+        fmtstr = ', '.join('"%s"' % x for x in set(fmtstr))
+        lines.append('    [I_%s] = {%s},' % (instr, fmtstr))
+    print('const char *armv7_format_strings[%d][3] = {' % instrcnt)
+    print('\n'.join(sorted(lines)))
+    print('};')

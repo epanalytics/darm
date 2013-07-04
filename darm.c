@@ -63,6 +63,9 @@ int darm_str(const darm_t *d, darm_str_t *str)
         return -1;
     }
 
+    // the format string index (armv7 only)
+    uint32_t idx = 0;
+
     // the offset in the format string
     uint32_t off = 0;
 
@@ -72,20 +75,29 @@ int darm_str(const darm_t *d, darm_str_t *str)
     // pointers to the arguments
     char *args[] = {str->arg[0], str->arg[1], str->arg[2], str->arg[3]};
 
+    char *shift = str->shift;
+
+    // format tracking
+    const char** ptrs = NULL;
+    const char* phony[3];
+
     // ptr to the output mnemonic
     char *mnemonic = str->mnemonic;
     APPEND(mnemonic, darm_mnemonic_name(d->instr));
 
-    char *shift = str->shift;
+    if(d->isthumb){
+        for (idx = 0; idx < 3; idx++){
+            phony[idx] = NULL;
+        }
+        phony[0] = thumb_instr_lookup[(d->w >> 6) & 0b1111111111].format;
+        ptrs = phony;
+        idx = 0;
+    } else
+        ptrs = armv7_format_strings[d->instr];
+    if(ptrs[0] == NULL) return -1;
+    //printf("format is %s\n", ptrs[0]);
 
-    const char* ptr = NULL;
-    if(d->isthumb)
-        ptr = thumb_instr_formats[(d->w >> 8 ) & 0b11111111];
-    else
-        ptr = armv7_instr_formats[(d->w >> 24) & 0b11111111];
-    if(ptr == NULL) return -1;
-
-    for (char ch; (ch = ptr[off]) != 0; off++) {
+    for (char ch; (ch = ptrs[idx][off]) != 0; off++) {
         //printf("got %c %d\n", ch, ch);
         switch (ch) {
         case 's':
@@ -378,6 +390,12 @@ int darm_str(const darm_t *d, darm_str_t *str)
         default:
             return -1;
         }
+
+        // TODO: anything but armv7
+        if (d->isthumb) break;
+
+        if(ptrs[++idx] == NULL || idx == 3) return -1;
+        off--;
     }
 
     *mnemonic = *args[0] = *args[1] = *args[2] = *args[3] = *shift = 0;
