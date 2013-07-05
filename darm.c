@@ -85,11 +85,22 @@ int darm_str(const darm_t *d, darm_str_t *str)
     char *mnemonic = str->mnemonic;
     APPEND(mnemonic, darm_mnemonic_name(d->instr));
 
-    if(d->isthumb){
+    if(M_ARM != d->mode){
         for (idx = 0; idx < 3; idx++){
             phony[idx] = NULL;
         }
-        phony[0] = thumb_instr_lookup[(d->w >> 6) & 0b1111111111].format;
+
+        switch (d->mode){
+        case M_THUMB:
+            phony[0] = thumb_instr_lookup[(d->w >> 6) & 0b1111111111].format;
+            break;
+        case M_THUMB2_16:
+            phony[0] = thumb2_16_instr_lookup[(d->w >> 5) & 0b1111111].format;
+            break;
+        case M_THUMB2:
+        default:
+            return -1;
+        }
         ptrs = phony;
         idx = 0;
     } else
@@ -392,7 +403,7 @@ int darm_str(const darm_t *d, darm_str_t *str)
         }
 
         // TODO: anything but armv7
-        if (d->isthumb) break;
+        if (M_ARM != d->mode) break;
 
         if(ptrs[++idx] == NULL || idx == 3) return -1;
         off--;

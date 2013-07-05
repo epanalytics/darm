@@ -61,7 +61,7 @@ static int thumb_disasm(darm_t *d, uint16_t w)
 
     d->instr = lkup->instr;
     d->instr_type = lkup->instr_type;
-    d->isthumb = 1;
+    d->mode = M_THUMB;
     d->size = 2;
     d->cond = C_AL;
 

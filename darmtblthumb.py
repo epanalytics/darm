@@ -106,8 +106,8 @@ thumbs = [
     ('ADR <Rd>, PC=<Rn>, #<imm8>', 1, 0, 1, 0, 0, Rd3, imm8),
 
     # THUMB_ADD_SP
-    ('ADD SP=<Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, 0, imm7),
-    ('SUB SP=<Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, 1, imm7),
+    ('ADD SP=<Rd>, SP=<Rn>, #<imm7>', 1, 0, 1, 1, 0, 0, 0, 0, 0, imm7),
+    ('SUB SP=<Rd>, SP=<Rn>, #<imm7>', 1, 0, 1, 1, 0, 0, 0, 0, 1, imm7),
 
     # THUMB_PSHPOP
     ('POP <registers>',  1, 0, 1, 1, 1, 1, 0, P, register_list8),

@@ -28,12 +28,14 @@ POSSIBILITY OF SUCH DAMAGE.
 """
 import darmtbl
 import darmtblthumb
+import darmtblthumb2
 import itertools
 import string
 import sys
 import textwrap
 
 thumb_lookup_bits = 10
+thumb2_16_lookup_bits = 7
 
 def struct_definition(name, arr):
     a = arr
@@ -41,22 +43,29 @@ def struct_definition(name, arr):
         string.join(['    ' + a[i][1] + '  ' + a[i][0] + ';' for i in range(len(arr))], '\n') +\
         '} %s;\n\n' % (name)
 
+def bins(n, l):
+    s = bin(n)
+    while len(s) - 2 < l:
+        s = s[:2] + '0' + s[2:]
+    return s
+
 def instruction_lookup_table(arr, size, kind):
     """Lookup table for all relevant instruction features."""    
     values = []
-    for k in range(size):
+    t = 2**size
+    for k in range(t):
         s = ''
         if not arr.has_key(k):
             s += '{ I_INVLD, T_INVLD, NULL}'
         else:
             a = arr[k]
             s += '{ I_%s, T_%s, "%s"}' % (a[0], a[1][1], a[2])
-        if k < size-1:
+        if k < t-1:
             s += ','
-        s = '/* %03X */ ' % (k) + s
+        s = '/* %s */ ' % (bins(k, size)) + s
         values.append(s)
 
-    return 'darm_lookup_t %s_instr_lookup[%d] = {' % (kind, size) + \
+    return 'darm_lookup_t %s_instr_lookup[%d] = {' % (kind, t) + \
         '\n' + string.join(values, '\n') + '\n};'
 
 def instruction_name(x):
@@ -298,21 +307,22 @@ def magic_open(fname):
 
 d = darmtbl
 d2 = darmtblthumb
+d3 = darmtblthumb2
 
 def notype(*x):
     return (0,) + x
 
-
 def armv7(*x):
     return (1,) + x
-
 
 def thumb(*x):
     return (2,) + x
 
+def thumb2_16(*x):
+    return (3,) + x
 
 def thumb2(*x):
-    return (3,) + x
+    return (4,) + x
 
 
 # we specify various instruction types
@@ -415,6 +425,7 @@ instr_types = [
            'ins<c> <Rd>,<Rm>{,<rotation>}'],
           lambda x, y, z: x[1:6] == (0, 1, 1, 0, 1)),
 
+    # TODO: harmonize insn classes across armv7, thumb, thumb2
     # thumb1
     thumb('DST_SRC', 'Manipulate and move a register to another register',
           ['ins{S} <Rd>,<Rm>', 'ins{S} <Rd>,<Rm>,#<imm>'],
@@ -465,6 +476,33 @@ instr_types = [
           ['ins <label>'],
           lambda x, y, z: x[0:5] == (1, 1, 1, 0, 0)),
 
+    # TODO: types, formats, descriptions could use improvement
+    thumb2_16('BR_CONDZERO', 'Compare and branch on zero',
+              ['ins <label>'],
+              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:6] == (0) and x[7:8] == (1)),
+    thumb2_16('DATA_EXTEND', 'Signed/unsigned extend word/byte',
+              ['ins<c> <Rd>,<Rm>'],
+              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:8] == (0, 0, 1, 0)),
+    thumb2_16('PSHPOP', 'Push/pop multiple registers',
+              ['ins <registers>'],
+              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:7] == (1, 0)),
+    # TODO: combine these next two into "special"?
+    thumb2_16('SETEND', 'Set endian-ness',
+              ['ins <end>'],
+              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:11] == (0, 1, 1, 0, 0, 1, 0)),
+    thumb2_16('PROC_STATE', 'Change processor state',
+              ['ins <flags>'],
+              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:11] == (0, 1, 1, 0, 0, 1, 1)),
+    thumb2_16('BYTE_REVERSE', 'Byte reverse word/halfword',
+              ['ins <Rd>,<Rm>'],
+              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:8] == (1, 0, 1, 0)),
+    thumb2_16('BREAKPOINT', 'Breakpoint',
+              ['ins <arg>'],
+              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:8] == (1, 1, 1, 0)),
+    thumb2_16('IT', 'If-then and hints',
+              ['ins'],
+              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:8] == (1, 1, 1, 1)),
+
     # TODO: distinguish between thumb1/thumb2
     thumb('ONLY_IMM8', 'Instructions which only take an 8-byte immediate',
           ['ins<c> #<imm8>'],
@@ -487,7 +525,7 @@ instr_types = [
 ]
 
 if __name__ == '__main__':
-    armv7_table, thumb_table, thumb2_table = {}, {}, {}
+    armv7_table, thumb_table, thumb2_16_table = {}, {}, {}
 
     # the last item (a list) will contain the instructions affected by this
     # encoding type
@@ -560,8 +598,30 @@ if __name__ == '__main__':
                 for y in (_ for _ in instr_types if _[0] == 2):
                     if y[4](bits, instr, 0):
                         thumb_table[idx] = [instruction_name(instr), y, format_string(instr)]
-                        # debug matching
-                        #print instr, thumb_table[idx]
+                        y[-1].append(instr)
+                        break
+
+    for description in darmtblthumb2.thumb16:
+        instr = description[0]
+        bits = description[1:]
+
+        bitcount = sum(1 if isinstance(x, int) else x.bitsize for x in bits)
+        assert(bitcount == 16 and 'thumb2 16-bit instructions must be 16-bit')
+        if bitcount == 16:
+            identifier, remainder = [], []
+            for x in range(4,len(bits)):
+                if isinstance(bits[x], int):
+                    identifier.append(str(bits[x]))
+                elif len(identifier) + bits[x].bitsize > thumb2_16_lookup_bits:
+                    identifier += ['01'] * (thumb2_16_lookup_bits-len(identifier))
+                    remainder = bits[x:]
+                else:
+                    identifier += ['01'] * bits[x].bitsize
+            for x in itertools.product(*identifier[:thumb2_16_lookup_bits]):
+                idx = sum(int(x[y])*2**(thumb2_16_lookup_bits-1-y) for y in range(thumb2_16_lookup_bits))
+                for y in (_ for _ in instr_types if _[0] == 3):
+                    if y[4](bits, instr, 0):
+                        thumb2_16_table[idx] = [instruction_name(instr), y, format_string(instr)]
                         y[-1].append(instr)
                         break
 
@@ -626,6 +686,7 @@ if __name__ == '__main__':
     # print some required definitions
     print('extern const char *thumb_registers[9];')
     print('extern darm_lookup_t thumb_instr_lookup[%d];' % (2**thumb_lookup_bits))
+    print('extern darm_lookup_t thumb2_16_instr_lookup[%d];' % (2**thumb2_16_lookup_bits))
 
     print('#endif')
 
@@ -691,7 +752,8 @@ if __name__ == '__main__':
     print(string_table('thumb_registers', reg.split()))
 
     # single structure for all lookups
-    print(instruction_lookup_table(thumb_table, 2**thumb_lookup_bits, 'thumb'))
+    print(instruction_lookup_table(thumb_table, thumb_lookup_bits, 'thumb'))
+    print(instruction_lookup_table(thumb2_16_table, thumb2_16_lookup_bits, 'thumb2_16'))
 
 
     #

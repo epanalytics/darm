@@ -27,91 +27,38 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
 
+from darmbits import *
 
-class Bitsize:
-    def __init__(self, name, bitsize, comment):
-        self.name = name
-        self.bitsize = bitsize
-        self.comment = comment
-
-    def __repr__(self):
-        return '<%s:%d>' % (self.name, self.bitsize)
-
-
-cond          = Bitsize('cond', 4, 'Conditional Flags')
-Rd            = Bitsize('Rd', 4, 'Destination Register')
-Rd3           = Bitsize('Rd', 3, 'Destination Register')
-Rs            = Bitsize('Rs', 3, 'Shift Immediate')
-Rn            = Bitsize('Rn', 4, 'N Register')
-Rn3           = Bitsize('Rn', 3, 'N Register')
-Rm            = Bitsize('Rm', 4, 'Shift Register')
-Rm3           = Bitsize('Rm', 3, 'Shift Register')
-Rt            = Bitsize('Rt', 4, 'Transferred Register')
-Rt3           = Bitsize('Rt', 3, 'Transferred Register')
-Rt2           = Bitsize('Rt2', 4, 'Second Ternary Register')
-Ra            = Bitsize('Ra', 4, 'Accumulate Register')
-Rdm           = Bitsize('Rdm', 4, 'Destination & M Register')
-Rdm3          = Bitsize('Rdm', 3, 'Destination & M Register')
-Rdn           = Bitsize('Rdn', 4, 'Destination & N Register')
-Rdn3          = Bitsize('Rdn', 3, 'Destination & N Register')
-S             = Bitsize('S', 1, 'Update Conditional Flags')
-type_         = Bitsize('type', 2, 'Shift Type')
-msb           = Bitsize('msb', 5, 'Most Significant Bit')
-lsb           = Bitsize('lsb', 5, 'Least Significant Bit')
-register_list8= Bitsize('register_list', 8, 'Register List')
-register_list = Bitsize('register_list', 16, 'Register List')
-E             = Bitsize('E', 1, 'Endian Specifier')
-msr           = Bitsize('msr', 2, 'Move to Special Register mask')
-rotate        = Bitsize('rotate', 2, 'Rotation Type')
-H             = Bitsize('H', 1, 'Sign Extension Bit for BL(X)')
-option        = Bitsize('option', 4, 'Option for Debug Hint')
-W             = Bitsize('W', 1, 'Some Bit for LDM')
-widthm1       = Bitsize('widthm1', 5, 'Bit Width Minus One')
-M             = Bitsize('M', 1, 'High 16bits for Rm')
-N             = Bitsize('N', 1, 'High 16bits for Rn')
-DN            = Bitsize('DN', 1, 'High 16bits for Rdn')
-RdHi          = Bitsize('RdHi', 4, 'High 32bits for Rd')
-RdLo          = Bitsize('RdLo', 4, 'Low 32bits for Rd')
-R             = Bitsize('R', 1, 'Round Integer')
-sat_imm4      = Bitsize('sat_imm4', 4, 'Saturate Immediate')
-sat_imm5      = Bitsize('sat_imm5', 5, 'Saturate Immediate')
-sh            = Bitsize('sh', 1, 'Immediate Shift Value')
-opc1          = Bitsize('opc1', 4, 'Coprocessor Operation Code')
-opc2          = Bitsize('opc2', 3, 'Coprocessor Information')
-CRn           = Bitsize('CRn', 4, 'Coprocessor Operand Register')
-CRd           = Bitsize('CRd', 4, 'Coprocessor Destination Register')
-coproc        = Bitsize('coproc', 4, 'Coprocessor Number')
-CPOpc         = Bitsize('CPOpc', 3, 'Coprocessor Operation Mode')
-CRm           = Bitsize('CRm', 4, 'Coprocessor Operand Register')
-U             = Bitsize('U', 1, 'Addition flag for PLD')
-P             = Bitsize('P', 1, 'Protected Mode Flag?')
-D             = Bitsize('D', 1, 'User-defined bit')
-tb            = Bitsize('tb', 1, 'Is PKH in TB form or not?')
-imm4H         = Bitsize('imm4H', 4, 'High Word Register')
-imm4L         = Bitsize('imm4L', 4, 'Low Word Register')
-
-i             = Bitsize('imm1', 1, 'Immediate')
-J1            = Bitsize('J1', 1, 'Immediate')
-J2            = Bitsize('J2', 1, 'Immediate')
-imm2          = Bitsize('imm2', 2, 'Immediate')
-imm3          = Bitsize('imm3', 3, 'Immediate')
-imm4          = Bitsize('imm4', 4, 'Immediate')
-imm5          = Bitsize('imm5', 5, 'Immediate')
-imm6          = Bitsize('imm6', 6, 'Immediate')
-imm7          = Bitsize('imm7', 7, 'Immediate')
-imm8          = Bitsize('imm8', 8, 'Immediate')
-imm10         = Bitsize('imm10', 10, 'Immediate')
-imm10H        = Bitsize('imm10H', 10, 'Immediate')
-imm10L        = Bitsize('imm10L', 10, 'Immediate')
-imm11         = Bitsize('imm11', 11, 'Immediate')
-imm12         = Bitsize('imm12', 12, 'Immediate')
-imm24         = Bitsize('imm24', 24, 'Immediate')
-
+# details in the ARMv7-a reference manual
+thumb16 = [
+    ('BKPT #<imm8>',              1, 0, 1, 1, 1, 1, 1, 0, imm8),
+    ('CBZ <Rn>, <label>',         1, 0, 1, 1, 0, 0, i, 1, imm5, Rn3),
+    ('CBNZ <Rn>, <label>',        1, 0, 1, 1, 1, 0, i, 1, imm5, Rn3),
+    ('CPS <iflags>',              1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, im, (0), CP3),
+    ('NOP',                       1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+    ('PUSH <registers>',          1, 0, 1, 1, 0, 1, 0, M, register_list8),
+    ('POP <registers>',           1, 0, 1, 1, 1, 1, 0, M, register_list8),
+    ('REV <Rd>, <Rm>',            1, 0, 1, 1, 1, 0, 1, 0, 0, 0, Rm3, Rd3),
+    ('REV16 <Rd>, <Rm>',          1, 0, 1, 1, 1, 0, 1, 0, 0, 1, Rm3, Rd3),
+    ('REVSH <Rd>, <Rm>',          1, 0, 1, 1, 1, 0, 1, 0, 1, 1, Rm3, Rd3),
+    ('SEV',                       1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0),
+    ('SETEND <endian_specifier>', 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, (1), E, (0), (0), (0)),
+    ('SUB <Rd>,SP=<Rn>,#<imm7>',  1, 0, 1, 1, 0, 0, 0, 0, 1, imm7),
+    ('SXTB <Rd>, <Rm>',           1, 0, 1, 1, 0, 0, 1, 0, 0, 1, Rm3, Rd3),
+    ('SXTH <Rd>, <Rm>',           1, 0, 1, 1, 0, 0, 1, 0, 0, 0, Rm3, Rd3),
+    # TODO: same as BKPT above
+    #('UDF #<imm8>',               1, 1, 0, 1, 1, 1, 1, 0, imm8),
+    ('UXTB <Rd>, <Rm>',           1, 0, 1, 1, 0, 0, 1, 0, 1, 1, Rm3, Rd3),
+    ('UXTH <Rd>, <Rm>',           1, 0, 1, 1, 0, 0, 1, 0, 1, 0, Rm3, Rd3),
+    ('WFE',                       1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0),
+    ('WFI',                       1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0),
+    ('YIELD',                     1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0),
+]
 
 # stupid stuff like LSL-ed operands and negative constants and SP specific encodings
 # and optional args and thumb2 with split constants
 # are commented out because they throw warnings and need fmt string specificers
-thumbs = [
+thumb32 = [
     ('ADC{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 1, 0, S, Rn, 0, imm3, Rd, imm8),
     ('ADC{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     #('ADD{S}<c>.W <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 0, 0, S, Rn, 0, imm3, Rd, imm8),
@@ -134,12 +81,9 @@ thumbs = [
     ('BFI<c> <Rd>, <Rn>, #<lsb>, #<width>', 1, 1, 1, 1, 0, (0), 1, 1, 0, 1, 1, 0, Rn, 0, imm3, Rd, imm2, (0), msb),
     ('BIC{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 0, 1, S, Rn, 0, imm3, Rd, imm8),
     ('BIC{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
-    ('BKPT #<imm8>', 1, 0, 1, 1, 1, 1, 1, 0, imm8),
     ('BL<c> <label>', 1, 1, 1, 1, 0, S, imm10, 1, 1, J1, 1, J2, imm11),
     ('BLX<c> <label>', 1, 1, 1, 1, 0, S, imm10H, 1, 1, J1, 0, J2, imm10L, H),
     ('BXJ<c> <Rm>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, Rm, 1, 0, (0), 0, (1), (1), (1), (1), (0), (0), (0), (0), (0), (0), (0), (0)),
-    #('CB{N}Z <Rn>, <label>', 1, 0, 1, 1, op, 0, i, 1, imm5, Rn),
-    #('CB{N}Z <Rn>, <label>', 1, 0, 1, 1, op, 0, i, 1, imm5, Rn),
     ('CLREX<c>', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, (1), (1), (1), (1), 1, 0, (0), 0, (1), (1), (1), (1), 0, 0, 1, 0, (1), (1), (1), (1)),
     ('CLZ<c> <Rd>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, Rm, 1, 1, 1, 1, Rd, 1, 0, 0, 0, Rm),
     ('CMN<c> <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 0, 0, 1, Rn, 0, imm3, 1, 1, 1, 1, imm8),
@@ -207,7 +151,6 @@ thumbs = [
     ('MUL<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
     ('MVN{S}<c> <Rd>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 1, 1, S, 1, 1, 1, 1, 0, imm3, Rd, imm8),
     ('MVN{S}<c>.W <Rd>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, S, 1, 1, 1, 1, (0), imm3, Rd, imm2, type_, Rm),
-    ('NOP<c>', 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
     ('NOP<c>.W', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
     ('ORN{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 1, 1, S, Rn, 0, imm3, Rd, imm8),
     ('ORN{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
@@ -237,11 +180,8 @@ thumbs = [
     ('QSUB16<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 1, Rm),
     ('QSUB8<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 1, Rm),
     ('RBIT<c> <Rd>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, Rm, 1, 1, 1, 1, Rd, 1, 0, 1, 0, Rm),
-    ('REV<c> <Rd>, <Rm>', 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, Rm, Rd),
     ('REV<c>.W <Rd>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, Rm, 1, 1, 1, 1, Rd, 1, 0, 0, 0, Rm),
-    ('REV16<c> <Rd>, <Rm>', 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, Rm, Rd),
     ('REV16<c>.W <Rd>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, Rm, 1, 1, 1, 1, Rd, 1, 0, 0, 1, Rm),
-    ('REVSH<c> <Rd>, <Rm>', 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, Rm, Rd),
     ('REVSH<c>.W <Rd>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, Rm, 1, 1, 1, 1, Rd, 1, 0, 1, 1, Rm),
     ('ROR{S}<c> <Rd>, <Rm>, #<imm>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), imm3, Rd, imm2, 1, 1, Rm),
     ('ROR{S}<c>.W <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, S, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
@@ -256,8 +196,6 @@ thumbs = [
     ('SBFX<c> <Rd>, <Rn>, #<lsb>, #<width>', 1, 1, 1, 1, 0, (0), 1, 1, 0, 1, 0, 0, Rn, 0, imm3, Rd, imm2, (0), widthm1),
     ('SDIV<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, Rn, (1), (1), (1), (1), Rd, 1, 1, 1, 1, Rm),
     ('SEL<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, Rn, 1, 1, 1, 1, Rd, 1, 0, 0, 0, Rm),
-    ('SETEND <endian_specifier>', 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, (1), E, (0), (0), (0)),
-    ('SEV<c>', 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0),
     ('SEV<c>.W', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
     ('SHADD16<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, Rn, 1, 1, 1, 1, Rd, 0, 0, 1, 0, Rm),
     ('SHADD8<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, Rn, 1, 1, 1, 1, Rd, 0, 0, 1, 0, Rm),
@@ -319,10 +257,8 @@ thumbs = [
     ('SXTAB<c> <Rd>, <Rn>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, Rn, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
     ('SXTAB16<c> <Rd>, <Rn>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, Rn, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
     ('SXTAH<c> <Rd>, <Rn>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, Rn, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
-    ('SXTB<c> <Rd>, <Rm>', 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, Rm, Rd),
     ('SXTB<c>.W <Rd>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
     ('SXTB16<c> <Rd>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
-    ('SXTH<c> <Rd>, <Rm>', 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, Rm, Rd),
     ('SXTH<c>.W <Rd>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
     ('TBB<c> [<Rn>, <Rm>]', 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, Rn, (1), (1), (1), (1), (0), (0), (0), (0), 0, 0, 0, H, Rm),
     ('TEQ<c> <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 1, 0, 0, 1, Rn, 0, imm3, 1, 1, 1, 1, imm8),
@@ -333,7 +269,6 @@ thumbs = [
     ('UADD8<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, Rn, 1, 1, 1, 1, Rd, 0, 1, 0, 0, Rm),
     ('UASX<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, Rn, 1, 1, 1, 1, Rd, 0, 1, 0, 0, Rm),
     ('UBFX<c> <Rd>, <Rn>, #<lsb>, #<width>', 1, 1, 1, 1, 0, (0), 1, 1, 1, 1, 0, 0, Rn, 0, imm3, Rd, imm2, (0), widthm1),
-    ('UDF<c> #<imm8>', 1, 1, 0, 1, 1, 1, 1, 0, imm8),
     ('UDF<c>.W #<imm16>', 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, imm4, 1, 0, 1, 0, imm12),
     ('UDIV<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, Rn, (1), (1), (1), (1), Rd, 1, 1, 1, 1, Rm),
     ('UHADD16<c> <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, Rn, 1, 1, 1, 1, Rd, 0, 1, 1, 0, Rm),
@@ -361,121 +296,17 @@ thumbs = [
     ('UXTAB<c> <Rd>, <Rn>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, Rn, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
     ('UXTAB16<c> <Rd>, <Rn>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, Rd, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
     ('UXTAH<c> <Rd>, <Rn>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, Rn, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
-    ('UXTB<c> <Rd>, <Rm>', 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, Rm, Rd),
     ('UXTB<c>.W <Rd>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
     ('UXTB16<c> <Rd>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
-    ('UXTH<c> <Rd>, <Rm>', 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, Rm, Rd),
     ('UXTH<c>.W <Rd>, <Rm>{, <rotation>}', 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, Rd, 1, (0), rotate, Rm),
-    ('WFE<c>', 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0),
     ('WFE<c>.W', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
-    ('WFI<c>', 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0),
     ('WFI<c>.W', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1),
-    ('YIELD<c>', 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0),
     ('YIELD<c>.W', 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, (1), (1), (1), (1), 1, 0, (0), 0, (0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
-]
-
-# just thumb1 here
-# https://ece.uwaterloo.ca/~ece222/ARM/ARM7-TDMI-manual-pt3.pdf
-# helpful table: http://www.ittc.ku.edu/~kulkarni/research/thumb_ax.pdf
-# TODO: INS{S} allows disasm to set S for both darm_t and printing, INSS forces print (but doesn't set the darm_t necessarily?)
-thumbs = [
-    # THUMB_DST_SRC
-    ('ADDS <Rd>, <Rn>, <Rm>',    0, 0, 0, 1, 1, 0, 0, Rm3, Rn3, Rd3),
-    ('ADDS <Rd>, <Rm>, #<imm3>', 0, 0, 0, 1, 1, 1, 0, imm3, Rn3, Rd3),
-    ('SUBS <Rd>, <Rn>, <Rm>',    0, 0, 0, 1, 1, 0, 1, Rm3, Rn3, Rd3),
-    ('SUBS <Rd>, <Rm>, #<imm3>', 0, 0, 0, 1, 1, 1, 1, imm3, Rn3, Rd3),
-
-    # THUMB_ARITH
-    ('ASR <Rd>, <Rm>, #<imm5>', 0, 0, 0, 1, 0, imm5, Rm3, Rd3),
-    ('LSL <Rd>, <Rm>, #<imm5>', 0, 0, 0, 0, 0, imm5, Rm3, Rd3),
-    ('LSR <Rd>, <Rm>, #<imm5>', 0, 0, 0, 0, 1, imm5, Rm3, Rd3),
-    ('MOVS <Rd>, <Rm>',       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Rm3, Rd3), # special case of LSL
-
-    # THUMB_ARITH_IMM
-    ('ADDS <Rdn>, #<imm8>', 0, 0, 1, 1, 0, Rdn3, imm8),
-    ('CMP <Rn>, #<imm8>',     0, 0, 1, 0, 1, Rn3, imm8),
-    ('MOVS <Rd>, #<imm8>',  0, 0, 1, 0, 0, Rd3, imm8),
-    ('SUBS <Rdn>, #<imm8>', 0, 0, 1, 1, 1, Rdn3, imm8),
-
-    # THUMB_ALU
-    ('ADC <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, Rm3, Rdn3),
-    ('AND <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, Rm3, Rdn3),
-    ('ASR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, Rm3, Rdn3),
-    ('BIC <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, Rm3, Rdn3),
-    ('CMN <Rn>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 0, 1, 1, Rm3, Rn3),
-    ('CMP <Rn>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 0, 1, 0, Rm3, Rn3),
-    ('EOR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, Rm3, Rdn3),
-    ('LSL <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, Rm3, Rdn3),
-    ('LSR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, Rm3, Rdn3),
-    ('MUL <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, Rm3, Rdn3),
-    ('MVN <Rd>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 1, 1, 1, Rm3, Rd3),
-    ('ORR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, Rm3, Rdn3),
-    ('ROR <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, Rm3, Rdn3),
-    ('RSB <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, Rm3, Rdn3),
-    ('SBC <Rdn>, <Rm>', 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, Rm3, Rdn3),
-    ('TST <Rn>, <Rm>',  0, 1, 0, 0, 0, 0, 1, 0, 0, 0, Rm3, Rn3),
-
-    # THUMB_HIREGBX
-    ('ADD <Rdn>, <Rm>', 0, 1, 0, 0, 0, 1, 0, 0, M, DN, Rm3, Rdn3),
-    ('BLX <Rm>',        0, 1, 0, 0, 0, 1, 1, 1, 1, Rm, (0), (0), (0)),
-    ('BX <Rm>',         0, 1, 0, 0, 0, 1, 1, 1, 0, Rm, (0), (0), (0)),
-    ('CMP <Rn>, <Rm>',  0, 1, 0, 0, 0, 1, 0, 1, M, N, Rm3, Rn3),
-    ('MOV <Rd>, <Rm>',  0, 1, 0, 0, 0, 1, 1, 0, M, D, Rm3, Rd3),
-
-    # THUMB_LOAD_PCREL
-    ('LDR <Rt>, [PC=<Rn>,#<imm8>]', 0, 1, 0, 0, 1, Rt3, imm8),
-
-    # THUMB_LDST_REGOFF
-    ('LDR <Rt>, [<Rn>,<Rm>]',   0, 1, 0, 1, 1, 0, 0, Rm3, Rn3, Rt3),
-    ('LDRB <Rt>, [<Rn>,<Rm>]',  0, 1, 0, 1, 1, 1, 0, Rm3, Rn3, Rt3),
-    ('LDRH <Rt>, [<Rn>,<Rm>]',  0, 1, 0, 1, 1, 0, 1, Rm3, Rn3, Rt3),
-    ('LDRSB <Rt>, [<Rn>,<Rm>]', 0, 1, 0, 1, 0, 1, 1, Rm3, Rn3, Rt3),
-    ('LDRSH <Rt>, [<Rn>,<Rm>]', 0, 1, 0, 1, 1, 1, 1, Rm3, Rn3, Rt3),
-    ('STR <Rt>, [<Rn>,<Rm>]',   0, 1, 0, 1, 0, 0, 0, Rm3, Rn3, Rt3),
-    ('STRB <Rt>, [<Rn>,<Rm>]',  0, 1, 0, 1, 0, 1, 0, Rm3, Rn3, Rt3),
-    ('STRH <Rt>, [<Rn>,<Rm>]',  0, 1, 0, 1, 0, 0, 1, Rm3, Rn3, Rt3),
-
-    # THUMB_LDST_IMM
-    ('LDR <Rt>, [<Rn>,#<imm5>]',  0, 1, 1, 0, 1, imm5, Rn3, Rt3),
-    ('LDRB <Rt>, [<Rn>,#<imm5>]', 0, 1, 1, 1, 1, imm5, Rn3, Rt3),
-    ('LDRH <Rt>, [<Rn>,#<imm5>]', 1, 0, 0, 0, 1, imm5, Rn3, Rt3),
-    ('STR <Rt>, [<Rn>,#<imm5>]',  0, 1, 1, 0, 0, imm5, Rn3, Rt3),
-    ('STRB <Rt>, [<Rn>,#<imm5>]', 0, 1, 1, 1, 0, imm5, Rn3, Rt3),
-    ('STRH <Rt>, [<Rn>,#<imm5>]', 1, 0, 0, 0, 0, imm5, Rn3, Rt3),
-
-    # THUMB_LDST_SPREL
-    ('LDR <Rt>, [SP=<Rn>,#<imm8>]', 1, 0, 0, 1, 1, Rt3, imm8),
-    ('STR <Rt>, [SP=<Rn>,#<imm8>]', 1, 0, 0, 1, 0, Rt3, imm8),
-
-    # THUMB_LOAD_ADDR (like LEA in x86)
-    ('ADD <Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 0, 1, Rd3, imm8),
-    ('ADR <Rd>, PC=<Rn>, #<imm8>', 1, 0, 1, 0, 0, Rd3, imm8),
-
-    # THUMB_ADD_SP
-    ('ADD SP=<Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, 0, imm7),
-    ('SUB SP=<Rd>, SP=<Rn>, #<imm8>', 1, 0, 1, 1, 0, 0, 0, 0, 1, imm7),
-
-    # THUMB_PSHPOP
-    ('POP <registers>',  1, 0, 1, 1, 1, 1, 0, P, register_list8),
-    ('PUSH <registers>', 1, 0, 1, 1, 0, 1, 0, M, register_list8),
-
-    # THUMB_LDST_MULTI
-    ('LDM <Rn>!, <registers>', 1, 1, 0, 0, 1, Rn3, register_list8),
-    ('STM <Rn>!, <registers>', 1, 1, 0, 0, 0, Rn3, register_list8),
-
-    # THUMB_BR_COND
-    ('B<c> <label>', 1, 1, 0, 1, cond, imm8),
-
-    # THUMB_SWINT
-    ('SVC #<imm8>', 1, 1, 0, 1, 1, 1, 1, 1, imm8),
-
-    # THUMB_BR_UNCOND
-    ('B <label>', 1, 1, 1, 0, 0, imm11),
 ]
 
 if __name__ == '__main__':
     num = 0
-    for description in thumbs:
+    for description in thumb16:
         instr = description[0]
         bits = description[1:]
 
@@ -483,4 +314,4 @@ if __name__ == '__main__':
         if sum(bits) != 16:
             print(instr, bits, sum(bits))
         num += 1
-    print "Verified " + str(num) + " thumb1 instructions"
+    print "Verified " + str(num) + " 16-bit thumb2 instructions"

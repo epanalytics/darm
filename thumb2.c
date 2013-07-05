@@ -45,23 +45,123 @@ POSSIBILITY OF SUCH DAMAGE.
 #define GETBT(__v, __o, __n) ((__v >> __o) & BITMSK_ ## __n)
 #define IS_THUMB2_32BIT(__sw) ((((__sw >> 13) & 0b111) == 0b111) && (((__sw >> 11) & 0b11) != 0b00))
 
+int darm_thumb2_disasm16(darm_t *d, uint16_t w)
+{
+    darm_lookup_t* lkup;
+
+    lkup = &(thumb2_16_instr_lookup[GETBT(w, 5, 7)]);
+    if (I_INVLD == lkup->instr) return -1;
+
+    //printf("look idx %d\n", GETBT(w, 5, 7));
+
+    d->instr = lkup->instr;
+    d->instr_type = lkup->instr_type;
+    d->mode = M_THUMB2_16;
+    d->size = 2;
+    d->cond = C_AL;    
+
+    switch((uint32_t)d->instr_type){
+    case T_THUMB2_BR_CONDZERO:
+        d->Rn = GETBT(w, 0, 3);
+        d->I = B_SET;
+        d->imm = GETBT(w, 3, 5);
+        return 0;
+
+    case T_THUMB2_DATA_EXTEND:
+        d->Rm = GETBT(w, 3, 3);
+        d->Rd = GETBT(w, 0, 3);
+        return 0;
+
+    case T_THUMB2_PSHPOP:
+        d->W = B_SET;
+        d->reglist = GETBT(w, 0, 8);
+        return 0;
+
+    case T_THUMB2_SETEND:
+        d->E = GETBT(w, 3, 1);
+        return 0;
+
+    case T_THUMB2_PROC_STATE:
+        d->S = B_SET;
+        d->cpsr = (GETBT(w, 0, 3) << 6);
+        return 0;
+
+    case T_THUMB2_BYTE_REVERSE:
+        d->Rm = GETBT(w, 3, 3);
+        d->Rd = GETBT(w, 0, 3);
+        return 0;
+
+    case T_THUMB2_BREAKPOINT:
+        return 0;
+
+    case T_THUMB2_IT:
+        d->instr = I_IT;
+
+        switch(GETBT(w, 8, 4)){
+        case 0b0000:
+            d->instr = I_NOP;
+            break;
+        case 0b0001:
+            d->instr = I_YIELD;
+            break;
+        case 0b0010:
+            d->instr = I_WFE;
+            break;
+        case 0b0011:
+            d->instr = I_WFI;
+            break;
+        case 0b0100:
+            d->instr = I_SEV;
+            break;
+        }
+
+        if (GETBT(w, 0, 4)){
+            if (I_IT != d->instr){
+                return -1;
+            }
+        }
+
+        // I_IT instructions should never appear in assembled code
+        if (I_IT == d->instr) return -1;
+        return 0;
+
+    default:
+        return -1;
+    }
+
+    return -1;
+}
+
 int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
 {
     (void)d; (void) w; (void) w2;
     uint16_t tmp = 0;
+    int ret;
+    
+    // try 16bit first
+    if (!IS_THUMB2_32BIT(w)){
+        // first try thumb1
+        ret = darm_thumb_disasm(d, w);
 
-    if (IS_THUMB2_32BIT(w)){
-        // 32-bit
-    } else {
-        // TODO: send all 16-bit thumb here? or just thumb1?
-        return darm_thumb_disasm(d, w);
+        // if thumb1 fails, try 16-bit thumb2
+        if (ret){
+            return darm_thumb2_disasm16(d, w);
+        }
+
+        return ret;
     }
+
+    d->size = 4;
+    d->mode = M_THUMB2;
+
+    // 32-bit
+
 
     /*
 
     d->instr = thumb_instr_labels[w >> 8];
     d->instr_type = thumb_instr_types[w >> 8];
-    d->isthumb = 1;
+    d->mode = M_THUMB;
     
     // TODO: detect 32-bit thumb2
     d->size = 2;

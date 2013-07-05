@@ -207,8 +207,7 @@ struct {
     {0, 0, {.instr = I_INVLD}},
 
     {0xbe03, 0, {
-        .instr = I_BKPT, .instr_type = T_THUMB_ONLY_IMM8, .I = B_SET,
-        .cond = C_AL, .imm = 3}},
+        .instr = I_BKPT, .instr_type = T_THUMB2_BREAKPOINT, .cond = C_AL}},
     {0xb5f0, 0, {
         .instr = I_PUSH, .instr_type = T_THUMB_PSHPOP, .cond = C_AL,
         .reglist=0b100000011110000}},
@@ -222,12 +221,12 @@ struct {
 
 static int _darm_thumb_disasm(darm_t *d, uint32_t w)
 {
-    return darm_thumb_disasm(d, w);
+    return darm_thumb_disasm(d, w & 0xffff);
 }
 
 static int _darm_thumb2_disasm(darm_t *d, uint32_t w)
 {
-    return darm_thumb2_disasm(d, w >> 16, w & 0xffff);
+    return darm_thumb2_disasm(d, w & 0xffff, (w << 16) & 0xffff);
 }
 
 int main()
@@ -243,7 +242,7 @@ int main()
         darm_t d; int ret;
 
         if(tests[i].w == 0) {
-            disasm_index++;
+            disasm_index += 2;
             continue;
         }
 

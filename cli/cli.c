@@ -153,7 +153,6 @@ int main(int argc, char** argv){
             wisa = A_ARM;
         } else if (!strcmp(argv[i], "-thumb")){
             wisa = A_THUMB;
-            print_usage(argv[0], "THUMB set not yet fully supported by darm");
         } else if (!strcmp(argv[i], "-xin")){
             use_stdin = 1;
         } else if (!strcmp(argv[i], "-file")){
@@ -273,7 +272,7 @@ int main(int argc, char** argv){
                     // TODO
                     CLI_ERROR(6, "do not support 32-bit thumb2 yet");
                 } else {
-                    ret = darm_thumb_disasm(&d, insn16);
+                    ret = darm_thumb2_disasm(&d, insn16, 0);
                 }
                 break;
 

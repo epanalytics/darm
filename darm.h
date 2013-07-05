@@ -79,6 +79,13 @@ typedef enum _darm_option_t {
     O_INVLD = -1,
 } darm_option_t;
 
+typedef enum _darm_mode_t {
+    M_ARM,
+    M_THUMB, M_THUMB2_16, M_THUMB2,
+
+    M_INVLD = -1,
+} darm_mode_t;
+
 typedef struct _darm_t {
     // the original encoded instruction
     uint32_t        w;
@@ -173,8 +180,11 @@ typedef struct _darm_t {
     // bitmask of registers affected by the STM/LDM/PUSH/POP instruction
     uint16_t        reglist;
 
+    // bitmask of CPSR bits explicitly changed by CPS instruction
+    uint32_t        cpsr;
+
     // indicates arm vs thumb
-    uint8_t         isthumb;
+    darm_mode_t     mode;
 } darm_t;
 
 typedef struct _darm_str_t {
