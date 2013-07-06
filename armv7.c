@@ -33,10 +33,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "darm.h"
 #include "armv7-tbl.h"
 
-#define BITMSK_12 ((1 << 12) - 1)
-#define BITMSK_16 ((1 << 16) - 1)
-#define BITMSK_24 ((1 << 24) - 1)
-
 #define ROR(val, rotate) (((val) >> (rotate)) | ((val) << (32 - (rotate))))
 
 // the upper four bits define the rotation value, but we have to multiply the

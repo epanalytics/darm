@@ -121,7 +121,6 @@ int main(int argc, char** argv){
     darm_t d;
     darm_str_t s;
     isa wisa = A_ARM;
-    endian wendian = E_LITTLE;
     int lu = P_LOWER;
 
     uint8_t use_stdin = 1;
@@ -135,7 +134,7 @@ int main(int argc, char** argv){
     uint8_t insn_buf[BUF_LIMIT];
     uint32_t buf_len = 0;
     uint32_t insn32;
-    uint16_t insn16;
+    uint16_t insn16, insn16_2;
 
     memset(&insn_buf, 0, BUF_LIMIT);
     memset(&s, 0, sizeof(s));
@@ -145,10 +144,8 @@ int main(int argc, char** argv){
             print_help = 1;
         } else if (!strcmp(argv[i], "-be")){
             /* TODO: support this option */
-            wendian = E_BIG;
             print_usage(argv[0], "-be option not supported");
         } else if (!strcmp(argv[i], "-le")){
-            wendian = E_LITTLE;
         } else if (!strcmp(argv[i], "-arm")){
             wisa = A_ARM;
         } else if (!strcmp(argv[i], "-thumb")){
@@ -269,8 +266,13 @@ int main(int argc, char** argv){
                 }
 
                 if (TEST_THUMB2_32BIT(insn16)){
-                    // TODO
-                    CLI_ERROR(6, "do not support 32-bit thumb2 yet");
+                    if (use_stdin){
+                        insn16_2 = BYTES_TO_UINT16(insn_buf[2], insn_buf[3]);
+                    } else {
+                        insn16_2 = BYTES_TO_UINT16(insn_buf[3], insn_buf[2]);
+                    }
+
+                    ret = darm_thumb2_disasm(&d, insn16, insn16_2);
                 } else {
                     ret = darm_thumb2_disasm(&d, insn16, 0);
                 }
@@ -281,7 +283,6 @@ int main(int argc, char** argv){
             }
 
             if (ret){
-                darm_dump(&d);
                 CLI_ERROR(4, "disassembler returned error after %d bytes\n", consumed);
             }
 

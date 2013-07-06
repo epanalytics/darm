@@ -207,7 +207,7 @@ struct {
     {0, 0, {.instr = I_INVLD}},
 
     {0xbe03, 0, {
-        .instr = I_BKPT, .instr_type = T_THUMB2_BREAKPOINT, .cond = C_AL}},
+        .instr = I_BKPT, .instr_type = T_THUMB2_16_BREAKPOINT, .cond = C_AL}},
     {0xb5f0, 0, {
         .instr = I_PUSH, .instr_type = T_THUMB_PSHPOP, .cond = C_AL,
         .reglist=0b100000011110000}},

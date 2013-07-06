@@ -34,8 +34,10 @@ import string
 import sys
 import textwrap
 
-thumb_lookup_bits = 10
-thumb2_16_lookup_bits = 7
+# armv7_lookup_bits = 8     # XXXXXXXX........ ................
+thumb_lookup_bits = 10      # XXXXXXXXXX......
+thumb2_16_lookup_bits = 7   # ....XXXXXXX.....
+thumb2_lookup_bits = 9      # ...XXXXXXXXX.... ................
 
 def struct_definition(name, arr):
     a = arr
@@ -256,6 +258,9 @@ def format_string(full):
         # the PKH instruction has either a TB or BT postfix, specified by
         # the T member of the darm object
         '<T>', 'T',
+
+        # forced 32-bit implementation
+        '.W', 'W',
     ]
 
     instr = instruction_name(full)
@@ -426,7 +431,7 @@ instr_types = [
           lambda x, y, z: x[1:6] == (0, 1, 1, 0, 1)),
 
     # TODO: harmonize insn classes across armv7, thumb, thumb2
-    # thumb1
+    # thumb1 (16-bit)
     thumb('DST_SRC', 'Manipulate and move a register to another register',
           ['ins{S} <Rd>,<Rm>', 'ins{S} <Rd>,<Rm>,#<imm>'],
           lambda x, y, z: x[0:3] == (0, 0, 0) and x[3:5] != (1, 1)),
@@ -476,7 +481,7 @@ instr_types = [
           ['ins <label>'],
           lambda x, y, z: x[0:5] == (1, 1, 1, 0, 0)),
 
-    # TODO: types, formats, descriptions could use improvement
+    # 16-bit thumb2
     thumb2_16('BR_CONDZERO', 'Compare and branch on zero',
               ['ins <label>'],
               lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:6] == (0) and x[7:8] == (1)),
@@ -486,7 +491,6 @@ instr_types = [
     thumb2_16('PSHPOP', 'Push/pop multiple registers',
               ['ins <registers>'],
               lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:7] == (1, 0)),
-    # TODO: combine these next two into "special"?
     thumb2_16('SETEND', 'Set endian-ness',
               ['ins <end>'],
               lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:11] == (0, 1, 1, 0, 0, 1, 0)),
@@ -502,6 +506,11 @@ instr_types = [
     thumb2_16('IT', 'If-then and hints',
               ['ins'],
               lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:8] == (1, 1, 1, 1)),
+
+    # 32-bit thumb2
+    thumb2('BR_COND', 'Conditional branch',
+           ['ins<c> <label>'],
+           lambda x, y, z: x[0:5] == (1, 1, 1, 1, 0) and x[6:9] != (1, 1, 1)),
 
     # TODO: distinguish between thumb1/thumb2
     thumb('ONLY_IMM8', 'Instructions which only take an 8-byte immediate',
@@ -521,18 +530,17 @@ instr_types = [
            'ins{S} <Rd3>, <Rn3>, <Rm3>',
            'ins <Rd3>, <Rn3>, <Rm3>'],
           lambda x, y, z: x[0:5] == (0,0,0,1,1) and x[-3:] == (d2.Rm3, d2.Rn3, d2.Rd3)),
-
 ]
 
 if __name__ == '__main__':
-    armv7_table, thumb_table, thumb2_16_table = {}, {}, {}
+    armv7_table, thumb_table, thumb2_16_table, thumb2_table = {}, {}, {}, {}
 
     # the last item (a list) will contain the instructions affected by this
     # encoding type
     instr_types = [list(x) + [[]] for x in instr_types]
 
     # prepend the instruction set to the encoding types
-    insns_types = '', 'ARM_', 'THUMB_', 'THUMB2_'
+    insns_types = '', 'ARM_', 'THUMB_', 'THUMB2_16_', 'THUMB2_'
     instr_types = [[x[0]] + [insns_types[x[0]] + x[1]] + x[2:6]
                    for x in instr_types]
 
@@ -583,7 +591,6 @@ if __name__ == '__main__':
         bitcount = sum(1 if isinstance(x, int) else x.bitsize for x in bits)
         assert(bitcount == 16 and 'thumb1 instructions must be 16-bit')
         if bitcount == 16:
-            # TODO fix >16
             identifier, remainder = [], []
             for x in range(len(bits)):
                 if isinstance(bits[x], int):
@@ -622,6 +629,31 @@ if __name__ == '__main__':
                 for y in (_ for _ in instr_types if _[0] == 3):
                     if y[4](bits, instr, 0):
                         thumb2_16_table[idx] = [instruction_name(instr), y, format_string(instr)]
+                        y[-1].append(instr)
+                        break
+
+    for description in darmtblthumb2.thumb32:
+        instr = description[0]
+        bits = description[1:]
+
+        bitcount = sum(1 if isinstance(x, int) else x.bitsize for x in bits)
+        assert(bitcount == 32 and 'thumb2 32-bit instructions must be 16-bit')
+        if bitcount == 32:
+            identifier, remainder = [], []
+
+            for x in range(3,len(bits)):
+                if isinstance(bits[x], int):
+                    identifier.append(str(bits[x]))
+                elif len(identifier) + bits[x].bitsize > thumb2_lookup_bits:
+                    identifier += ['01'] * (thumb2_lookup_bits-len(identifier))
+                    remainder = bits[x:]
+                else:
+                    identifier += ['01'] * bits[x].bitsize
+            for x in itertools.product(*identifier[:thumb2_lookup_bits]):
+                idx = sum(int(x[y])*2**(thumb2_lookup_bits-1-y) for y in range(thumb2_lookup_bits))
+                for y in (_ for _ in instr_types if _[0] == 4):
+                    if y[4](bits, instr, 0):
+                        thumb2_table[idx] = [instruction_name(instr), y, format_string(instr)]
                         y[-1].append(instr)
                         break
 
@@ -687,6 +719,7 @@ if __name__ == '__main__':
     print('extern const char *thumb_registers[9];')
     print('extern darm_lookup_t thumb_instr_lookup[%d];' % (2**thumb_lookup_bits))
     print('extern darm_lookup_t thumb2_16_instr_lookup[%d];' % (2**thumb2_16_lookup_bits))
+    print('extern darm_lookup_t thumb2_instr_lookup[%d];' % (2**thumb2_lookup_bits))
 
     print('#endif')
 
@@ -754,6 +787,7 @@ if __name__ == '__main__':
     # single structure for all lookups
     print(instruction_lookup_table(thumb_table, thumb_lookup_bits, 'thumb'))
     print(instruction_lookup_table(thumb2_16_table, thumb2_16_lookup_bits, 'thumb2_16'))
+    print(instruction_lookup_table(thumb2_table, thumb2_lookup_bits, 'thumb2'))
 
 
     #

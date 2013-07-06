@@ -46,8 +46,6 @@ thumb16 = [
     ('SUB <Rd>,SP=<Rn>,#<imm7>',  1, 0, 1, 1, 0, 0, 0, 0, 1, imm7),
     ('SXTB <Rd>, <Rm>',           1, 0, 1, 1, 0, 0, 1, 0, 0, 1, Rm3, Rd3),
     ('SXTH <Rd>, <Rm>',           1, 0, 1, 1, 0, 0, 1, 0, 0, 0, Rm3, Rd3),
-    # TODO: same as BKPT above
-    #('UDF #<imm8>',               1, 1, 0, 1, 1, 1, 1, 0, imm8),
     ('UXTB <Rd>, <Rm>',           1, 0, 1, 1, 0, 0, 1, 0, 1, 1, Rm3, Rd3),
     ('UXTH <Rd>, <Rm>',           1, 0, 1, 1, 0, 0, 1, 0, 1, 0, Rm3, Rd3),
     ('WFE',                       1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0),
@@ -55,10 +53,15 @@ thumb16 = [
     ('YIELD',                     1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0),
 ]
 
+thumb32 = [
+    ('B<c>.W <label>', 1, 1, 1, 1, 0, S, cond, imm6, 1, 0, J1, 0, J2, imm11),
+    ('B<c>.W <label>', 1, 1, 1, 1, 0, S, imm10, 1, 0, J1, 1, J2, imm11),
+]
+
 # stupid stuff like LSL-ed operands and negative constants and SP specific encodings
 # and optional args and thumb2 with split constants
 # are commented out because they throw warnings and need fmt string specificers
-thumb32 = [
+thumb32xxx = [
     ('ADC{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 1, 0, S, Rn, 0, imm3, Rd, imm8),
     ('ADC{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     #('ADD{S}<c>.W <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 1, 0, 0, 0, S, Rn, 0, imm3, Rd, imm8),
@@ -75,8 +78,6 @@ thumb32 = [
     ('AND{S}<c>.W <Rd>, <Rn>, <Rm>{, <shift>}', 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, S, Rn, (0), imm3, Rd, imm2, type_, Rm),
     #('ASR{S}<c>.W <Rd>, <Rm>, #<imm>', 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, S, 1, 1, 1, 1, (0), imm3, Rd, imm2, 1, 0, Rm),
     ('ASR{S}<c>.W <Rd>, <Rn>, <Rm>', 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, S, Rn, 1, 1, 1, 1, Rd, 0, 0, 0, 0, Rm),
-    ('B<c>.W <label>', 1, 1, 1, 1, 0, S, cond, imm6, 1, 0, J1, 0, J2, imm11),
-    ('B<c>.W <label>', 1, 1, 1, 1, 0, S, imm10, 1, 0, J1, 1, J2, imm11),
     ('BFC<c> <Rd>, #<lsb>, #<width>', 1, 1, 1, 1, 0, (0), 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, imm3, Rd, imm2, (0), msb),
     ('BFI<c> <Rd>, <Rn>, #<lsb>, #<width>', 1, 1, 1, 1, 0, (0), 1, 1, 0, 1, 1, 0, Rn, 0, imm3, Rd, imm2, (0), msb),
     ('BIC{S}<c> <Rd>, <Rn>, #<const>', 1, 1, 1, 1, 0, i, 0, 0, 0, 0, 1, S, Rn, 0, imm3, Rd, imm8),

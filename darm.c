@@ -98,6 +98,8 @@ int darm_str(const darm_t *d, darm_str_t *str)
             phony[0] = thumb2_16_instr_lookup[(d->w >> 5) & 0b1111111].format;
             break;
         case M_THUMB2:
+            phony[0] = thumb2_instr_lookup[(d->w >> 20) & 0b111111111].format;
+            break;
         default:
             return -1;
         }
@@ -285,6 +287,12 @@ int darm_str(const darm_t *d, darm_str_t *str)
         case 'L':
             *args[arg]++ = '#';
             args[arg] += utoa(d->lsb, args[arg], 10);
+            arg++;
+            continue;
+
+        case 'W':
+            *mnemonic++ = '.';
+            *mnemonic++ = 'W';
             arg++;
             continue;
 

@@ -236,4 +236,26 @@ void darm_dump(const darm_t *d);
 int darm_str(const darm_t *d, darm_str_t *str);
 int darm_str2(const darm_t *d, darm_str_t *str, int lowercase);
 
+
+#define BITMSK_1 ((1 << 1) - 1)
+#define BITMSK_2 ((1 << 2) - 1)
+#define BITMSK_3 ((1 << 3) - 1)
+#define BITMSK_4 ((1 << 4) - 1)
+#define BITMSK_5 ((1 << 5) - 1)
+#define BITMSK_6 ((1 << 6) - 1)
+#define BITMSK_7 ((1 << 7) - 1)
+#define BITMSK_8 ((1 << 8) - 1)
+#define BITMSK_9 ((1 << 9) - 1)
+#define BITMSK_10 ((1 << 10) - 1)
+#define BITMSK_11 ((1 << 11) - 1)
+#define BITMSK_12 ((1 << 12) - 1)
+#define BITMSK_13 ((1 << 13) - 1)
+#define BITMSK_14 ((1 << 14) - 1)
+#define BITMSK_15 ((1 << 15) - 1)
+#define BITMSK_16 ((1 << 16) - 1)
+#define BITMSK_24 ((1 << 24) - 1)
+#define GETBT(__v, __o, __n) ((__v >> __o) & BITMSK_ ## __n)
+#define IS_THUMB2_32BIT(__sw) ((((__sw >> 13) & 0b111) == 0b111) && (((__sw >> 11) & 0b11) != 0b00))
+
+
 #endif

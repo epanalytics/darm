@@ -33,24 +33,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "darm.h"
 #include "thumb-tbl.h"
 
-// TODO: move to common loc
-#define BITMSK_1 ((1 << 1) - 1)
-#define BITMSK_2 ((1 << 2) - 1)
-#define BITMSK_3 ((1 << 3) - 1)
-#define BITMSK_4 ((1 << 4) - 1)
-#define BITMSK_5 ((1 << 5) - 1)
-#define BITMSK_6 ((1 << 6) - 1)
-#define BITMSK_7 ((1 << 7) - 1)
-#define BITMSK_8 ((1 << 8) - 1)
-#define BITMSK_9 ((1 << 9) - 1)
-#define BITMSK_10 ((1 << 10) - 1)
-#define BITMSK_11 ((1 << 11) - 1)
-#define BITMSK_12 ((1 << 12) - 1)
-#define BITMSK_13 ((1 << 13) - 1)
-#define BITMSK_14 ((1 << 14) - 1)
-#define BITMSK_15 ((1 << 15) - 1)
-#define GETBT(__v, __o, __n) ((__v >> __o) & BITMSK_ ## __n)
-
 static int thumb_disasm(darm_t *d, uint16_t w)
 {
     uint8_t h1, h2, r1, r2;
@@ -64,9 +46,6 @@ static int thumb_disasm(darm_t *d, uint16_t w)
     d->mode = M_THUMB;
     d->size = 2;
     d->cond = C_AL;
-
-    // TODO: always set S for all of certain kinds of instrs (CMP and friends)?
-    // TODO: handle thumb1 here only?
 
     switch ((uint32_t) d->instr_type){
 
@@ -219,12 +198,15 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         return 0;
 
     case T_THUMB_BR_COND:
-        // TODO: add 4 more to imm?
+        // TODO: conditions dont seem to be handled correctly here
     case T_THUMB_SWINT:
         d->cond = GETBT(w, 8, 4);
         d->I = B_SET;
         d->imm = GETBT(w, 0, 8);
         if (I_SVC != d->instr) d->imm <<= 1;
+        if (T_THUMB_BR_COND == d->instr_type){
+            d->imm += 4;
+        }
         if (d->cond == 0b1110) return -1;
         return 0;
 
