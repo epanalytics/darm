@@ -45,21 +45,27 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
     d->instr_type = lkup->instr_type;
     d->size = 4;
     d->mode = M_THUMB2;
+    d->cond = C_AL;    
 
     switch((uint32_t)d->instr_type){
     case T_THUMB2_BR_COND:
-        // TODO: condition code doe not work correctly
-        d->cond = GETBT(w, 22, 4);
-
-        // TODO: not sure about these
         d->I = B_SET;
         if (GETBT(w, 12, 1)){
-            d->imm = (GETBT(w, 16,  6) << 11) & GETBT(w, 0, 11);
+            d->imm = (GETBT(w, 16, 10) << 11) | GETBT(w, 0, 11);
+            if (d->imm & 0x100000){
+                d->imm |= 0xffe00000;
+            }
         } else {
-            d->imm = (GETBT(w, 16, 10) << 11) & GETBT(w, 0, 11);
+            d->imm = (GETBT(w, 16,  6) << 11) | GETBT(w, 0, 11);
+            if (d->imm & 0x10000){
+                d->imm |= 0xfffe00000;
+            }
+            d->cond = GETBT(w, 22, 4);
         }
+        d->imm *= 2;
+        d->imm += 4;
         return 0;
-
+        
     default:
         return -1;
 

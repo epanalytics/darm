@@ -293,7 +293,6 @@ int darm_str(const darm_t *d, darm_str_t *str)
         case 'W':
             *mnemonic++ = '.';
             *mnemonic++ = 'W';
-            arg++;
             continue;
 
         case 'w':

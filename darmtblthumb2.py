@@ -55,7 +55,7 @@ thumb16 = [
 
 thumb32 = [
     ('B<c>.W <label>', 1, 1, 1, 1, 0, S, cond, imm6, 1, 0, J1, 0, J2, imm11),
-    ('B<c>.W <label>', 1, 1, 1, 1, 0, S, imm10, 1, 0, J1, 1, J2, imm11),
+    ('B<c>.W <label>', 1, 1, 1, 1, 0, S,      imm10, 1, 0, J1, 1, J2, imm11),
 ]
 
 # stupid stuff like LSL-ed operands and negative constants and SP specific encodings

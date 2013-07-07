@@ -257,5 +257,4 @@ int darm_str2(const darm_t *d, darm_str_t *str, int lowercase);
 #define GETBT(__v, __o, __n) ((__v >> __o) & BITMSK_ ## __n)
 #define IS_THUMB2_32BIT(__sw) ((((__sw >> 13) & 0b111) == 0b111) && (((__sw >> 11) & 0b11) != 0b00))
 
-
 #endif
