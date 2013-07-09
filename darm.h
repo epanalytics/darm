@@ -237,6 +237,8 @@ int darm_str(const darm_t *d, darm_str_t *str);
 int darm_str2(const darm_t *d, darm_str_t *str, int lowercase);
 
 
+int32_t sign_ext32(int32_t v, uint32_t len);
+
 #define BITMSK_1 ((1 << 1) - 1)
 #define BITMSK_2 ((1 << 2) - 1)
 #define BITMSK_3 ((1 << 3) - 1)
@@ -256,5 +258,8 @@ int darm_str2(const darm_t *d, darm_str_t *str, int lowercase);
 #define BITMSK_24 ((1 << 24) - 1)
 #define GETBT(__v, __o, __n) ((__v >> __o) & BITMSK_ ## __n)
 #define IS_THUMB2_32BIT(__sw) ((((__sw >> 13) & 0b111) == 0b111) && (((__sw >> 11) & 0b11) != 0b00))
+#define THUMB_INSTR_LOOKUP(__v) (thumb_instr_lookup[GETBT(__v, 6, 10)])
+#define THUMB2_16_INSTR_LOOKUP(__v) (thumb2_16_instr_lookup[GETBT(__v, 5, 7)])
+#define THUMB2_INSTR_LOOKUP(__v) (thumb2_instr_lookup[(GETBT(__v, 20, 9) << 1) | GETBT(__v, 15, 1)])
 
 #endif

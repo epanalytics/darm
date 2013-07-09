@@ -37,7 +37,7 @@ import textwrap
 # armv7_lookup_bits = 8     # XXXXXXXX........ ................
 thumb_lookup_bits = 10      # XXXXXXXXXX......
 thumb2_16_lookup_bits = 7   # ....XXXXXXX.....
-thumb2_lookup_bits = 9      # ...XXXXXXXXX.... ................
+thumb2_lookup_bits = 10     # ...XXXXXXXXX.... X...............
 
 def struct_definition(name, arr):
     a = arr
@@ -173,6 +173,9 @@ def format_string(full):
         'PC=<Rn>', '<Rn>',
         'SP=<Rn>', '<Rn>',
         'SP=<Rd>', '<Rd>',
+
+        # implied shift TBH
+        'LSL #1', 'S',
 
         # memory address
         '[<Rn>,<Rm>]', 'M',
@@ -431,6 +434,7 @@ instr_types = [
           lambda x, y, z: x[1:6] == (0, 1, 1, 0, 1)),
 
     # TODO: harmonize insn classes across armv7, thumb, thumb2
+
     # thumb1 (16-bit)
     thumb('DST_SRC', 'Manipulate and move a register to another register',
           ['ins{S} <Rd>,<Rm>', 'ins{S} <Rd>,<Rm>,#<imm>'],
@@ -508,28 +512,12 @@ instr_types = [
               lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:8] == (1, 1, 1, 1)),
 
     # 32-bit thumb2
-    thumb2('BR_COND', 'Conditional branch',
-           ['ins<c> <label>'],
-           lambda x, y, z: x[0:5] == (1, 1, 1, 1, 0) and x[6:9] != (1, 1, 1)),
-
-    # TODO: distinguish between thumb1/thumb2
-    thumb('ONLY_IMM8', 'Instructions which only take an 8-byte immediate',
-          ['ins<c> #<imm8>'],
-          lambda x, y, z: d2.imm8 in x and len(x) == 9),
-    thumb('PUSHPOP', 'Push and pop instruction',
-          ['ins<c> <registers>'],
-          lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:7] == (1, 0) and x[-1] == d2.register_list8),
-    thumb('REG_IMM', 'Apply immediate to a register',
-          ['ins <Rd3>,#<const>',
-           'ins{S}<c> <Rd>,#<const>',
-           'ins{S}<c> <Rd3>,#<const>',
-           'ins{S}<c> <Rdn>,#<const>'],	
-          lambda x, y, z: x[0:3] == (0, 0, 1) and x[-1] == d2.imm8 and x[-2] in (d2.Rd, d2.Rd3, d2.Rdn)),
-    thumb('ARITH_REG_REG', 'Arithmetic with registers',
-          ['ins{S}<c> <Rd>,<Rn>,<Rm>',
-           'ins{S} <Rd3>, <Rn3>, <Rm3>',
-           'ins <Rd3>, <Rn3>, <Rm3>'],
-          lambda x, y, z: x[0:5] == (0,0,0,1,1) and x[-3:] == (d2.Rm3, d2.Rn3, d2.Rd3)),
+    thumb2('BRANCH', 'Branch and miscellaneous control',
+           ['ins<c> <label>', 'ins<c> <Rm>'],
+           lambda x, y, z: y[0:2] + y[9:10] == ('1', '0', '1')),
+    thumb2('TABLE_BRANCH', 'Table branch',
+           ['ins<c> <Rn> <Rm>'],
+           lambda x, y, z: y[0:10] == ('0', '1', '0', '0', '0', '1', '1', '0', '1', '1')),
 ]
 
 if __name__ == '__main__':
@@ -641,18 +629,17 @@ if __name__ == '__main__':
         if bitcount == 32:
             identifier, remainder = [], []
 
-            for x in range(3,len(bits)):
+            for x in range(len(bits)):
                 if isinstance(bits[x], int):
                     identifier.append(str(bits[x]))
-                elif len(identifier) + bits[x].bitsize > thumb2_lookup_bits:
-                    identifier += ['01'] * (thumb2_lookup_bits-len(identifier))
-                    remainder = bits[x:]
                 else:
                     identifier += ['01'] * bits[x].bitsize
-            for x in itertools.product(*identifier[:thumb2_lookup_bits]):
+
+            l = identifier[3:12] + identifier[15:16]
+            for x in itertools.product(*l):
                 idx = sum(int(x[y])*2**(thumb2_lookup_bits-1-y) for y in range(thumb2_lookup_bits))
                 for y in (_ for _ in instr_types if _[0] == 4):
-                    if y[4](bits, instr, 0):
+                    if y[4](bits, x, identifier):
                         thumb2_table[idx] = [instruction_name(instr), y, format_string(instr)]
                         y[-1].append(instr)
                         break

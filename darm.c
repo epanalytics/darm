@@ -57,6 +57,10 @@ int utoa(unsigned int value, char *out, int base)
     return counter;
 }
 
+int32_t sign_ext32(int32_t v, uint32_t len){
+    return ((v << (32 - len)) >> (32 - len));
+}
+
 int darm_str(const darm_t *d, darm_str_t *str)
 {
     if(d->instr == I_INVLD || d->instr >= ARRAYSIZE(darm_mnemonics)) {
@@ -92,13 +96,13 @@ int darm_str(const darm_t *d, darm_str_t *str)
 
         switch (d->mode){
         case M_THUMB:
-            phony[0] = thumb_instr_lookup[(d->w >> 6) & 0b1111111111].format;
+            phony[0] = THUMB_INSTR_LOOKUP(d->w).format;
             break;
         case M_THUMB2_16:
-            phony[0] = thumb2_16_instr_lookup[(d->w >> 5) & 0b1111111].format;
+            phony[0] = THUMB2_16_INSTR_LOOKUP(d->w).format;
             break;
         case M_THUMB2:
-            phony[0] = thumb2_instr_lookup[(d->w >> 20) & 0b111111111].format;
+            phony[0] = THUMB2_INSTR_LOOKUP(d->w).format;
             break;
         default:
             return -1;
@@ -403,6 +407,11 @@ int darm_str(const darm_t *d, darm_str_t *str)
                 APPEND(args[arg], "ROR #");
                 args[arg] += utoa(d->rotate, args[arg], 10);
             }
+            continue;
+
+            // TODO: for TBB/TBH print these outside all args?
+        case '[':
+        case ']':
             continue;
 
         default:

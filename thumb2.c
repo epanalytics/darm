@@ -36,8 +36,9 @@ POSSIBILITY OF SUCH DAMAGE.
 int darm_thumb2_disasm32(darm_t *d, uint32_t w)
 {
     darm_lookup_t* lkup;
+    uint32_t op, op1, op2;
 
-    lkup = &(thumb2_instr_lookup[GETBT(w, 20, 9)]);
+    lkup = &(THUMB2_INSTR_LOOKUP(w));
     if (I_INVLD == lkup->instr) return -1;
 
     d->w = w;
@@ -48,22 +49,72 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
     d->cond = C_AL;    
 
     switch((uint32_t)d->instr_type){
-    case T_THUMB2_BR_COND:
-        d->I = B_SET;
-        if (GETBT(w, 12, 1)){
-            d->imm = (GETBT(w, 16, 10) << 11) | GETBT(w, 0, 11);
-            if (d->imm & 0x100000){
-                d->imm |= 0xffe00000;
-            }
-        } else {
-            d->imm = (GETBT(w, 16,  6) << 11) | GETBT(w, 0, 11);
-            if (d->imm & 0x10000){
-                d->imm |= 0xfffe00000;
-            }
+    case T_THUMB2_BRANCH:
+        op = GETBT(w, 20, 7);
+        op1 = GETBT(w, 12, 3);
+        op2 = GETBT(w, 8, 4);
+
+        // Conditional branch
+        if (0b0 == GETBT(op1, 2, 1) && 0b0 == GETBT(op1, 0, 1) && 0b111 != GETBT(op, 3, 3)){
+            d->instr = I_B; 
             d->cond = GETBT(w, 22, 4);
+
+            d->I = B_SET;
+            d->imm = (GETBT(w, 16,  6) << 12) | (GETBT(w, 0, 11) << 1);
+            d->imm = sign_ext32(d->imm, 18) + 4;
         }
-        d->imm *= 2;
-        d->imm += 4;
+
+        // Unconditional branch
+        else if (0b0 == GETBT(op1, 2, 1) && 0b1 == GETBT(op1, 0, 1)){
+            d->instr = I_B; 
+
+            d->I = B_SET;
+            d->imm = (GETBT(w, 16, 10) << 12) | (GETBT(w, 0, 11) << 1);
+            d->imm = sign_ext32(d->imm, 22) + 4;
+        }
+
+        // Branch and exchange Jazelle
+        else if (0b1 == GETBT(op1, 2, 1) && 0b1 == GETBT(op1, 0, 1) && 0b0111100 == op){
+            d->instr = I_BXJ;
+            d->Rm = GETBT(w, 16, 4);
+        }
+
+        // Branch with link
+        else if (0b1 == GETBT(op1, 2, 1) && 0b1 == GETBT(op1, 0, 1)){
+            d->instr = I_BL;
+
+            d->I = B_SET;
+            d->imm = (GETBT(w, 16, 10) << 12) | (GETBT(w, 0, 11) << 1);
+            d->imm = sign_ext32(d->imm, 22) + 4;
+        }
+
+        // Branch with link and exchange
+        else if (0b1 == GETBT(op1, 2, 1) && 0b0 == GETBT(op1, 0, 1)){
+            d->instr = I_BLX;
+            d->H = GETBT(w, 0, 1);
+
+            // TODO: when added to PC, PC must first be 4-aligned
+            d->I = B_SET;
+            d->imm = (GETBT(w, 16, 10) << 12) | (GETBT(w, 1, 10) << 2);
+            d->imm = sign_ext32(d->imm, 22) + 4;
+        }
+
+        else {
+            return -1;
+        }
+
+        return 0;
+
+    case T_THUMB2_TABLE_BRANCH:
+        d->Rn = GETBT(w, 16, 4);
+        d->Rm = GETBT(w, 0, 4);
+
+        d->instr = GETBT(w, 4, 1)? I_TBH: I_TBB;
+        if (I_TBH == d->instr){
+            d->shift_type = S_LSL;
+            d->shift = 1;
+        }
+
         return 0;
         
     default:
@@ -72,69 +123,6 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
     }
     return -1;
 
-    /*
-
-    d->instr = thumb_instr_labels[w >> 8];
-    d->instr_type = thumb_instr_types[w >> 8];
-    d->mode = M_THUMB;
-    
-    // TODO: detect 32-bit thumb2
-    d->size = 2;
-
-    // TODO: squashes 16/32bit together?
-    d->cond = C_AL;
-    switch ((uint32_t) d->instr_type) {
-    case T_THUMB_ONLY_IMM8:
-        d->I = B_SET;
-        d->imm = w & 0xff;
-        return 0;
-    case T_THUMB_PUSHPOP:
-        if((w>>11) & 1)
-            d->instr = I_POP;
-        else
-            d->instr = I_PUSH;
-        d->reglist = ((w) & BITMSK_8);
-        d->reglist |= (((w>>8)&1)<<14); // or in the LR(9th bit)
-        return 0;
-    case T_THUMB_REG_IMM:
-        tmp = (w>>11) & 0b11;
-        if(tmp == 0b10)
-            d->instr = I_ADDS;
-        else if(tmp == 0b11)
-            d->instr = I_SUBS;
-        else if(tmp == 0b00)
-            d->instr = I_MOVS;
-        d->Rd = (w >> 8) & 0b111;
-        d->imm = w & BITMSK_8;
-        d->I = B_SET;
-        return 0;
-    case T_THUMB_ARITH_REG_REG:
-        tmp = (w>>9) & 0b11;
-        if(tmp == 0b1)
-            d->instr = I_SUBS;
-        else if (tmp == 0b0)
-            d->instr = I_ADDS;
-        d->Rd = (w) & 0b111;
-        d->Rn = (w>>3) & 0b111;
-        d->Rm = (w>>6) & 0b111;
-        return 0;
-
-    case T_THUMB_ARITH_STACK:
-        d->Rn = SP;
-        d->I = B_SET;
-        switch((w >> 11)){
-        case 0b10101:
-            d->Rd = (w >> 8) & 0b111;
-            d->imm = (w & BITMSK_8) << 2;
-            return 0;
-        case 0b10110:
-            d->instr = (w >> 7) & 1 ? I_SUB : I_ADD;
-            d->Rd = SP;
-            d->imm = (w & BITMSK_7) << 2;
-            return 0;
-        }
-    }
-        */
 }
 
 int darm_thumb2_disasm16(darm_t *d, uint16_t w)
