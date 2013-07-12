@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "../darm.h"
 
 struct {
@@ -203,11 +204,9 @@ struct {
         .instr = I_ADR, .instr_type = T_ARM_ARITH_IMM, .cond = C_AL,
         .S = B_UNSET, .U = B_SET, .I = B_SET, .imm = 0x100000, .Rd = 12}},
 
-    // we switch to thumb (oboy)
+    // switch to thumb
     {0, 0, {.instr = I_INVLD}},
 
-    {0xbe03, 0, {
-        .instr = I_BKPT, .instr_type = T_THUMB2_16_BREAKPOINT, .cond = C_AL}},
     {0xb5f0, 0, {
         .instr = I_PUSH, .instr_type = T_THUMB_PSHPOP, .cond = C_AL,
         .reglist=0b100000011110000}},
@@ -217,6 +216,121 @@ struct {
     {0x1ae3, 0, {
         .instr = I_SUBS, .instr_type = T_THUMB_ARITH, .cond = C_AL,
         .S = B_SET, .Rd = 3, .Rn = 4, .Rm = 3}},
+    {0x6812, 0, {.instr = I_LDR, .instr_type = T_THUMB_LDST_IMM,
+        .cond = C_AL, .Rn = 2, .Rt = 2, .P = B_SET, .I = B_SET, .imm = 0}},
+    {0x4614, 0, {
+        .instr = I_MOV, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
+        .Rd = 4, .Rm = 2}},
+    {0xbd83, 0, {
+        .instr = I_POP, .instr_type = T_THUMB_PSHPOP, .cond = C_AL,
+        .reglist = 0b1000000010000011}},
+    {0x4788, 0, {
+        .instr = I_BLX, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
+        .Rm = 1}},
+    {0x47c8, 0, {
+        .instr = I_BLX, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
+        .Rm = 9}},
+    {0x4708, 0, {
+        .instr = I_BX, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
+        .Rm = 1}},
+    {0x4748, 0, {
+        .instr = I_BX, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
+        .Rm = 9}},
+    {0xdf64, 0, {
+        .instr = I_SVC, .instr_type = T_THUMB_SWINT, .I = B_SET, .cond = C_UNCOND,
+        .imm = 0x64}},
+    {0xc283, 0, {
+        .instr = I_STM, .instr_type = T_THUMB_LDST_MULTI, .cond = C_AL,
+        .Rn = 2, .W = B_SET, .reglist = 0b10000011}},
+    {0xca83, 0, {
+        .instr = I_LDM, .instr_type = T_THUMB_LDST_MULTI, .cond = C_AL,
+        .Rn = 2, .W = B_SET, .reglist = 0b10000011}},
+    {0xbd83, 0, {
+        .instr = I_POP, .instr_type = T_THUMB_PSHPOP, .cond = C_AL,
+        .reglist = 0b1000000010000011}},
+    {0xbc83, 0, {
+        .instr = I_POP, .instr_type = T_THUMB_PSHPOP, .cond = C_AL,
+        .reglist = 0b0000000010000011}},
+    {0xa101, 0, {
+        .instr = I_ADR, .instr_type = T_THUMB_LOAD_ADDR, .cond = C_AL,
+        .Rd = 1, .Rn = PC, .I = B_SET, .imm = 0x4}},
+    {0xa901, 0, {
+        .instr = I_ADD, .instr_type = T_THUMB_LOAD_ADDR, .cond = C_AL,
+        .Rd = 1, .Rn = SP, .I = B_SET, .imm = 0x4}},
+    {0x9920, 0, {
+        .instr = I_LDR, .instr_type = T_THUMB_LDST_SPREL, .cond = C_AL,
+        .Rn = SP, .Rt = 1, .I = B_SET, .imm = 0x80, .P = B_SET}},
+    {0x9120, 0, {
+        .instr = I_STR, .instr_type = T_THUMB_LDST_SPREL, .cond = C_AL,
+        .Rn = SP, .Rt = 1, .I = B_SET, .imm = 0x80, .P = B_SET}},
+    {0x68d1, 0, {
+        .instr = I_LDR, .instr_type = T_THUMB_LDST_IMM, .cond = C_AL,
+        .Rn = 2, .Rt = 1, .I = B_SET, .imm = 0xc, .P = B_SET}},
+    {0x7b51, 0, {
+        .instr = I_LDRB, .instr_type = T_THUMB_LDST_IMM, .cond = C_AL,
+        .Rn = 2, .Rt = 1, .I = B_SET, .imm = 0xd, .P = B_SET}},
+    {0x89d1, 0, {
+        .instr = I_LDRH, .instr_type = T_THUMB_LDST_IMM, .cond = C_AL,
+        .Rn = 2, .Rt = 1, .I = B_SET, .imm = 0xe, .P = B_SET}},
+    {0x60d1, 0, {
+        .instr = I_STR, .instr_type = T_THUMB_LDST_IMM, .cond = C_AL,
+        .Rn = 2, .Rt = 1, .I = B_SET, .imm = 0xc, .P = B_SET}},
+    {0x7351, 0, {
+        .instr = I_STRB, .instr_type = T_THUMB_LDST_IMM, .cond = C_AL,
+        .Rn = 2, .Rt = 1, .I = B_SET, .imm = 0xd, .P = B_SET}},
+    {0x81d1, 0, {
+        .instr = I_STRH, .instr_type = T_THUMB_LDST_IMM, .cond = C_AL,
+        .Rn = 2, .Rt = 1, .I = B_SET, .imm = 0xe, .P = B_SET}},
+    {0x5ed1, 0, {
+        .instr = I_LDRSH, .instr_type = T_THUMB_LDST_REG, .cond = C_AL,
+        .Rn = 2, .Rm = 3, .Rt = 1, .P = B_SET}},
+    {0x4911, 0, {
+        .instr = I_LDR, .instr_type = T_THUMB_LOAD_PCREL, .cond = C_AL,
+        .Rn = PC, .Rt = 1, .I = B_SET, .imm = 0x44, .P = B_SET}},
+    {0x0014, 0, {
+        .instr = I_MOVS, .instr_type = T_THUMB_DST_SRC, .cond = C_AL,
+        .Rd = 4, .Rm = 2, .I = B_SET, .imm = 0, .S = B_SET}},
+    {0x4614, 0, {
+        .instr = I_MOV, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
+        .Rd = 4, .Rm = 2}},
+    {0x4422, 0, {
+        .instr = I_ADD, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
+        .Rd = 2, .Rn = 2, .Rm = 4}},
+    {0x1912, 0, {
+        .instr = I_ADDS, .instr_type = T_THUMB_ARITH, .cond = C_AL,
+        .Rd = 2, .Rn = 2, .Rm = 4, .S = B_SET}},
+    {0x1ed1, 0, {
+        .instr = I_SUBS, .instr_type = T_THUMB_ARITH, .cond = C_AL,
+        .Rd = 1, .Rn = 2, .I = B_SET, .imm = 0x3, .S = B_SET}},
+    {0x45e1, 0, {
+        .instr = I_CMP, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
+        .Rn = 9, .Rm = 12, .S = B_SET}},
+    {0xb590, 0, {
+        .instr = I_PUSH, .instr_type = T_THUMB_PSHPOP, .cond = C_AL,
+        .reglist = 0b100000010010000}},
+    {0xd1f6, 0, {
+        .instr = I_B, .instr_type = T_THUMB_BR_COND, .cond = C_NE,
+        .I = B_SET, .imm = 0x1f0}},
+    {0x46c0, 0, {
+        .instr = I_MOV, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
+        .Rd = 8, .Rm = 8}},
+
+    // switch to thumb2
+    {0, 0, {.instr = I_INVLD}},
+
+    {0xbe03, 0, {
+        .instr = I_BKPT, .instr_type = T_THUMB2_16_BREAKPOINT, .cond = C_AL}},
+    {0xf3c18f00, 0, {
+        .instr = I_BXJ, .instr_type = T_THUMB2_BRANCH, .cond = C_AL, .Rm = 1}},
+    {0xf3c98f00, 0, {
+        .instr = I_BXJ, .instr_type = T_THUMB2_BRANCH, .cond = C_AL, .Rm = 9}},
+    {0xf6b7ae02, 0, {
+        .instr = I_B, .instr_type = T_THUMB2_BRANCH, .cond = C_GE,
+        .I = B_SET, .imm = -33784}},
+    {0xf7ffefda, 0, {
+        .instr = I_BLX, .instr_type = T_THUMB2_BRANCH, .cond = C_AL, 
+        .I = B_SET, .imm = -72}},
+
 };
 
 static int _darm_thumb_disasm(darm_t *d, uint32_t w)
@@ -226,7 +340,13 @@ static int _darm_thumb_disasm(darm_t *d, uint32_t w)
 
 static int _darm_thumb2_disasm(darm_t *d, uint32_t w)
 {
-    return darm_thumb2_disasm(d, w & 0xffff, (w << 16) & 0xffff);
+    // 32-bit
+    if ((w >> 16) & 0xffff){
+        return darm_thumb2_disasm(d, (w >> 16) & 0xffff, (w) & 0xffff);
+    }
+
+    // 16-bit
+    return darm_thumb2_disasm(d, w & 0xffff, 0x0000);
 }
 
 int main()
@@ -242,7 +362,7 @@ int main()
         darm_t d; int ret;
 
         if(tests[i].w == 0) {
-            disasm_index += 2;
+            disasm_index++;
             continue;
         }
 
@@ -274,6 +394,7 @@ int main()
         }
         else if(ret == 0) {
             printf("error decoding instr..\n");
+            exit(1);
         }
 
 
@@ -304,6 +425,7 @@ int main()
             printf("test values:\n");
             darm_dump(&tests[i].d);
             failure = 1;
+            exit(1);
         }
     }
     if(failure == 0) {

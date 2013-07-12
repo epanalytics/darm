@@ -110,7 +110,7 @@ int main(int argc, char** argv){
     int i, j, ret;
     uint32_t ui;
 
-    char* line = NULL;
+    char line[BUF_LIMIT];
     char* end;
     size_t lnsz;
     char c1, c2;
@@ -213,7 +213,7 @@ int main(int argc, char** argv){
     while (1){
 
         if (use_stdin){
-            if (-1 == getline(&line, &i, stdin)){
+            if (NULL == fgets(&(line[0]), BUF_LIMIT, stdin)){
                 break;
             }
 
@@ -221,7 +221,9 @@ int main(int argc, char** argv){
 
             j = strlen(line);
             for (i = 0; i < j; i++){
-                if (line[i] != ' ' && line[i] != '\t' && line[i] != '\n'){
+                if (line[i] == '\0'){
+                    break;
+                } else if (line[i] != ' ' && line[i] != '\t' && line[i] != '\n'){
                     if (c1 == 0){
                         c1 = line[i];
                     } else if (c2 == 0){

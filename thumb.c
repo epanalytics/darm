@@ -118,10 +118,13 @@ static int thumb_disasm(darm_t *d, uint16_t w)
             d->Rm = r2;
             d->S = B_SET;
             break;
+        case I_BLX:
         case I_BX:
             d->Rm = r2;
             d->instr = h1? I_BLX : I_BX;
             break;
+        default:
+            return -1;
         }
         return 0;
 

@@ -53,6 +53,7 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
         op = GETBT(w, 20, 7);
         op1 = GETBT(w, 12, 3);
         op2 = GETBT(w, 8, 4);
+        op2 |= 0;
 
         // Conditional branch
         if (0b0 == GETBT(op1, 2, 1) && 0b0 == GETBT(op1, 0, 1) && 0b111 != GETBT(op, 3, 3)){
@@ -74,7 +75,7 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
         }
 
         // Branch and exchange Jazelle
-        else if (0b1 == GETBT(op1, 2, 1) && 0b1 == GETBT(op1, 0, 1) && 0b0111100 == op){
+        else if (0b0 == GETBT(op1, 2, 1) && 0b0 == GETBT(op1, 0, 1) && 0b0111100 == op){
             d->instr = I_BXJ;
             d->Rm = GETBT(w, 16, 4);
         }
