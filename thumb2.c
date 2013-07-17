@@ -38,15 +38,16 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
     darm_lookup_t* lkup;
     uint32_t op, op1, op2;
 
-    lkup = &(THUMB2_INSTR_LOOKUP(w));
-    if (I_INVLD == lkup->instr) return -1;
-
     d->w = w;
-    d->instr = lkup->instr;
-    d->instr_type = lkup->instr_type;
     d->size = 4;
     d->mode = M_THUMB2;
     d->cond = C_AL;    
+
+    lkup = &(THUMB2_INSTR_LOOKUP(w));
+    if (I_INVLD == lkup->instr) return -1;
+
+    d->instr = lkup->instr;
+    d->instr_type = lkup->instr_type;
 
     switch((uint32_t)d->instr_type){
     case T_THUMB2_BRANCH:
@@ -62,7 +63,7 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
 
             d->I = B_SET;
             d->imm = (GETBT(w, 16,  6) << 12) | (GETBT(w, 0, 11) << 1);
-            d->imm = sign_ext32(d->imm, 18) + 4;
+            d->imm = sign_ext32(d->imm, 18);
         }
 
         // Unconditional branch
@@ -71,7 +72,7 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
 
             d->I = B_SET;
             d->imm = (GETBT(w, 16, 10) << 12) | (GETBT(w, 0, 11) << 1);
-            d->imm = sign_ext32(d->imm, 22) + 4;
+            d->imm = sign_ext32(d->imm, 22);
         }
 
         // Branch and exchange Jazelle
@@ -86,7 +87,7 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
 
             d->I = B_SET;
             d->imm = (GETBT(w, 16, 10) << 12) | (GETBT(w, 0, 11) << 1);
-            d->imm = sign_ext32(d->imm, 22) + 4;
+            d->imm = sign_ext32(d->imm, 22);
         }
 
         // Branch with link and exchange
@@ -97,7 +98,7 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
             // TODO: when added to PC, PC must first be 4-aligned
             d->I = B_SET;
             d->imm = (GETBT(w, 16, 10) << 12) | (GETBT(w, 1, 10) << 2);
-            d->imm = sign_ext32(d->imm, 22) + 4;
+            d->imm = sign_ext32(d->imm, 22);
         }
 
         else {
@@ -143,7 +144,7 @@ int darm_thumb2_disasm16(darm_t *d, uint16_t w)
     case T_THUMB2_16_BR_CONDZERO:
         d->Rn = GETBT(w, 0, 3);
         d->I = B_SET;
-        d->imm = GETBT(w, 3, 5);
+        d->imm = GETBT(w, 3, 5) << 1;
         return 0;
 
     case T_THUMB2_16_DATA_EXTEND:

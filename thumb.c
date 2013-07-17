@@ -201,14 +201,13 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         return 0;
 
     case T_THUMB_BR_COND:
-        // TODO: conditions dont seem to be handled correctly here
     case T_THUMB_SWINT:
         d->cond = GETBT(w, 8, 4);
         d->I = B_SET;
         d->imm = GETBT(w, 0, 8);
         if (I_SVC != d->instr) d->imm <<= 1;
         if (T_THUMB_BR_COND == d->instr_type){
-            d->imm += 4;
+            d->imm = sign_ext32(d->imm, 8);
         }
         if (d->cond == 0b1110) return -1;
         return 0;

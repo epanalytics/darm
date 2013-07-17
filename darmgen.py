@@ -488,7 +488,7 @@ instr_types = [
     # 16-bit thumb2
     thumb2_16('BR_CONDZERO', 'Compare and branch on zero',
               ['ins <label>'],
-              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5:6] == (0) and x[7:8] == (1)),
+              lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[5] == 0 and x[7] == 1),
     thumb2_16('DATA_EXTEND', 'Signed/unsigned extend word/byte',
               ['ins<c> <Rd>,<Rm>'],
               lambda x, y, z: x[0:4] == (1, 0, 1, 1) and x[4:8] == (0, 0, 1, 0)),

@@ -310,7 +310,7 @@ struct {
         .reglist = 0b100000010010000}},
     {0xd1f6, 0, {
         .instr = I_B, .instr_type = T_THUMB_BR_COND, .cond = C_NE,
-        .I = B_SET, .imm = 0x1f0}},
+        .I = B_SET, .imm = -20}},
     {0x46c0, 0, {
         .instr = I_MOV, .instr_type = T_THUMB_HIREG_BX, .cond = C_AL,
         .Rd = 8, .Rm = 8}},
@@ -320,16 +320,19 @@ struct {
 
     {0xbe03, 0, {
         .instr = I_BKPT, .instr_type = T_THUMB2_16_BREAKPOINT, .cond = C_AL}},
+    {0xb10b, 0, {
+        .instr = I_CBZ, .instr_type = T_THUMB2_16_BR_CONDZERO, .cond = C_AL,
+        .I = B_SET, .imm = 2, .Rn = 3}},
     {0xf3c18f00, 0, {
         .instr = I_BXJ, .instr_type = T_THUMB2_BRANCH, .cond = C_AL, .Rm = 1}},
     {0xf3c98f00, 0, {
         .instr = I_BXJ, .instr_type = T_THUMB2_BRANCH, .cond = C_AL, .Rm = 9}},
     {0xf6b7ae02, 0, {
         .instr = I_B, .instr_type = T_THUMB2_BRANCH, .cond = C_GE,
-        .I = B_SET, .imm = -33784}},
+        .I = B_SET, .imm = -33788}},
     {0xf7ffefda, 0, {
         .instr = I_BLX, .instr_type = T_THUMB2_BRANCH, .cond = C_AL, 
-        .I = B_SET, .imm = -72}},
+        .I = B_SET, .imm = -76}},
 
 };
 
