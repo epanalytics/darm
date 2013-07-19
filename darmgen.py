@@ -29,6 +29,7 @@ POSSIBILITY OF SUCH DAMAGE.
 import darmtbl
 import darmtblthumb
 import darmtblthumb2
+import darmtblvfp
 import itertools
 import string
 import sys
@@ -38,6 +39,20 @@ import textwrap
 thumb_lookup_bits = 10      # XXXXXXXXXX......
 thumb2_16_lookup_bits = 7   # ....XXXXXXX.....
 thumb2_lookup_bits = 10     # ...XXXXXXXXX.... X...............
+
+thumb_lookup_bitMask =     '1111111111000000'
+thumb2_16_lookup_bitMask = '0000111111100000'
+thumb2_lookup_bitMask =    '0001111111110001' + '0000000000000000' # FIXME code didn't match above documentation
+thumbvfp_lookup_bitMask =  '0000001111110000' + '0000000111111111' # FIXME carve these out
+armvfp_lookup_bitMask =    '1111111111111111' + '1111111111111111'
+
+def selectBits(allBits, bitMask):
+    assert(len(bitMask) == len(allBits))
+    retval = []
+    for i in range(len(bitMask)):
+        if bitMask[i] == '1':
+            retval.append(allBits[i])
+    return retval
 
 def struct_definition(name, arr):
     a = arr
@@ -572,77 +587,45 @@ if __name__ == '__main__':
                     y[-1].append(instr)
                     break
 
-    for description in darmtblthumb.thumbs:
-        instr = description[0]
-        bits = description[1:]
+    def fillTable(allDescriptions, table, inslen, bitmask, typenum):
+        for description in allDescriptions:
+            instr = description[0]
+            bits = description[1:]
 
-        bitcount = sum(1 if isinstance(x, int) else x.bitsize for x in bits)
-        assert(bitcount == 16 and 'thumb1 instructions must be 16-bit')
-        if bitcount == 16:
-            identifier, remainder = [], []
-            for x in range(len(bits)):
-                if isinstance(bits[x], int):
-                    identifier.append(str(bits[x]))
-                elif len(identifier) + bits[x].bitsize > thumb_lookup_bits:
-                    identifier += ['01'] * (thumb_lookup_bits-len(identifier))
-                    remainder = bits[x:]
+            # Verify bitcount
+            bitcount = sum(1 if isinstance(x, int) else x.bitsize for x in bits)
+            assert(bitcount == inslen and "incorrect instruction length")
+            if bitcount != inslen:
+                continue
+
+            allBits = []
+
+            # Stringify the bit-list
+            for x in bits:
+                if isinstance(x, int):
+                    allBits.append(str(x))
                 else:
-                    identifier += ['01'] * bits[x].bitsize
-            for x in itertools.product(*identifier[:thumb_lookup_bits]):
-                idx = sum(int(x[y])*2**(thumb_lookup_bits-1-y) for y in range(thumb_lookup_bits))
-                for y in (_ for _ in instr_types if _[0] == 2):
-                    if y[4](bits, instr, 0):
-                        thumb_table[idx] = [instruction_name(instr), y, format_string(instr)]
-                        y[-1].append(instr)
+                    allBits += ['01'] * x.bitsize
+
+            # Select id bits from bit-list
+            idbits = selectBits(allBits, bitmask)
+
+            # iterate over each possible encoding, expanding '01' entries
+            for enc in itertools.product(*idbits):
+                # use concatenated idbits value as index
+                idx = sum(int(enc[y])*2**(len(idbits)-1-y) for y in range(len(idbits)))
+                # for each instruction class with this type
+                for entry in (_ for _ in instr_types if _[0] == typenum):
+                    # check if instruction matches class
+                    if entry[4](bits, enc, allBits):
+                        table[idx] = [instruction_name(instr), entry, format_string(instr)]
+                        # add instruction to list in type
+                        entry[-1].append(instr)
                         break
 
-    for description in darmtblthumb2.thumb16:
-        instr = description[0]
-        bits = description[1:]
-
-        bitcount = sum(1 if isinstance(x, int) else x.bitsize for x in bits)
-        assert(bitcount == 16 and 'thumb2 16-bit instructions must be 16-bit')
-        if bitcount == 16:
-            identifier, remainder = [], []
-            for x in range(4,len(bits)):
-                if isinstance(bits[x], int):
-                    identifier.append(str(bits[x]))
-                elif len(identifier) + bits[x].bitsize > thumb2_16_lookup_bits:
-                    identifier += ['01'] * (thumb2_16_lookup_bits-len(identifier))
-                    remainder = bits[x:]
-                else:
-                    identifier += ['01'] * bits[x].bitsize
-            for x in itertools.product(*identifier[:thumb2_16_lookup_bits]):
-                idx = sum(int(x[y])*2**(thumb2_16_lookup_bits-1-y) for y in range(thumb2_16_lookup_bits))
-                for y in (_ for _ in instr_types if _[0] == 3):
-                    if y[4](bits, instr, 0):
-                        thumb2_16_table[idx] = [instruction_name(instr), y, format_string(instr)]
-                        y[-1].append(instr)
-                        break
-
-    for description in darmtblthumb2.thumb32:
-        instr = description[0]
-        bits = description[1:]
-
-        bitcount = sum(1 if isinstance(x, int) else x.bitsize for x in bits)
-        assert(bitcount == 32 and 'thumb2 32-bit instructions must be 16-bit')
-        if bitcount == 32:
-            identifier, remainder = [], []
-
-            for x in range(len(bits)):
-                if isinstance(bits[x], int):
-                    identifier.append(str(bits[x]))
-                else:
-                    identifier += ['01'] * bits[x].bitsize
-
-            l = identifier[3:12] + identifier[15:16]
-            for x in itertools.product(*l):
-                idx = sum(int(x[y])*2**(thumb2_lookup_bits-1-y) for y in range(thumb2_lookup_bits))
-                for y in (_ for _ in instr_types if _[0] == 4):
-                    if y[4](bits, x, identifier):
-                        thumb2_table[idx] = [instruction_name(instr), y, format_string(instr)]
-                        y[-1].append(instr)
-                        break
+    fillTable(darmtblthumb.thumbs, thumb_table, 16, thumb_lookup_bitMask, 2)
+    fillTable(darmtblthumb2.thumb16, thumb2_16_table, 16, thumb2_16_lookup_bitMask, 3)
+    fillTable(darmtblthumb2.thumb32, thumb2_table, 32, thumb2_lookup_bitMask, 4)
 
     # make a list of unique instructions affected by each encoding type,
     # we remove the first item from the instruction names, as this is I_INVLD
