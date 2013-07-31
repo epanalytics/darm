@@ -104,6 +104,9 @@ int darm_str(const darm_t *d, darm_str_t *str)
         case M_THUMB2:
             phony[0] = THUMB2_INSTR_LOOKUP(d->w).format;
             break;
+        case M_ARM_VFP:
+            phony[0] = VFP_INSTR_LOOKUP(d->w).format;
+            break;
         default:
             return -1;
         }
@@ -117,6 +120,14 @@ int darm_str(const darm_t *d, darm_str_t *str)
     for (char ch; (ch = ptrs[idx][off]) != 0; off++) {
         //printf("got %c %d\n", ch, ch);
         switch (ch) {
+        case 'D':
+            APPEND(mnemonic, ".F64");
+            continue;
+
+        case 'F':
+            APPEND(mnemonic, ".F32");
+            continue;
+
         case 's':
             if(d->S == B_SET) {
                 *mnemonic++ = 'S';
@@ -129,19 +140,19 @@ int darm_str(const darm_t *d, darm_str_t *str)
 
         case 'd':
             if(d->Rd == R_INVLD) break;
-            APPEND(args[arg], darm_register_name(d->Rd));
+            APPEND(args[arg], darm_any_register_name(d->Rd, d->dtype));
             arg++;
             continue;
 
         case 'n':
             if(d->Rn == R_INVLD) break;
-            APPEND(args[arg], darm_register_name(d->Rn));
+            APPEND(args[arg], darm_any_register_name(d->Rn, d->dtype));
             arg++;
             continue;
 
         case 'm':
             if(d->Rm == R_INVLD) break;
-            APPEND(args[arg], darm_register_name(d->Rm));
+            APPEND(args[arg], darm_any_register_name(d->Rm, d->dtype));
             arg++;
             continue;
 
@@ -313,7 +324,7 @@ int darm_str(const darm_t *d, darm_str_t *str)
 
         case 'B':
             *args[arg]++ = '[';
-            APPEND(args[arg], darm_register_name(d->Rn));
+            APPEND(args[arg], darm_any_register_name(d->Rn, d->dtype));
 
             // if post-indexed or the index is not even set, then we close
             // the memory address
@@ -336,7 +347,7 @@ int darm_str(const darm_t *d, darm_str_t *str)
                     *args[arg]++ = '-';
                 }
 
-                APPEND(args[arg], darm_register_name(d->Rm));
+                APPEND(args[arg], darm_any_register_name(d->Rm, d->dtype));
 
                 // if post-indexed this was a stand-alone operator one
                 if(d->P == B_UNSET) {
@@ -374,14 +385,14 @@ int darm_str(const darm_t *d, darm_str_t *str)
 
         case 'M':
             *args[arg]++ = '[';
-            APPEND(args[arg], darm_register_name(d->Rn));
+            APPEND(args[arg], darm_any_register_name(d->Rn, d->dtype));
             *args[arg]++ = ',';
             *args[arg]++ = ' ';
 
             // if the Rm operand is defined, then we use that optionally with
             // a shift, otherwise there might be an immediate value as offset
             if(d->Rm != R_INVLD) {
-                APPEND(args[arg], darm_register_name(d->Rm));
+                APPEND(args[arg], darm_any_register_name(d->Rm, d->dtype));
 
                 const char *type; uint32_t imm;
                 if(darm_immshift_decode(d, &type, &imm) == 0) {
@@ -519,12 +530,18 @@ void darm_dump(const darm_t *d)
         printf("cond:          C_%s\n", darm_condition_name(d->cond, 0));
     }
 
+    if(D_INVLD != d->dtype){
+        printf("dtype:         D_%s\n", d->dtype == D_F32? "F32" : "F64");
+    }
+
 #define PRINT_REG(reg) if(d->reg != R_INVLD) \
     printf("%-5s          %s\n", #reg ":", darm_register_name(d->reg))
+#define PRINT_ANY_REG(reg) if(d->reg != R_INVLD) \
+    printf("%-5s          %s\n", #reg ":", darm_any_register_name(d->reg, d->dtype))
 
-    PRINT_REG(Rd);
-    PRINT_REG(Rn);
-    PRINT_REG(Rm);
+    PRINT_ANY_REG(Rd);
+    PRINT_ANY_REG(Rn);
+    PRINT_ANY_REG(Rm);
     PRINT_REG(Ra);
     PRINT_REG(Rt);
     PRINT_REG(Rt2);

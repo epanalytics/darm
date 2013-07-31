@@ -148,8 +148,9 @@ thumbvfp = [
     ('VNMUL<c>.F64 <Dd>, <Dn>, <Dm>', 1, 1, 1, 0, 1, 1, 1, 0, 0, D, 1, 0, Dn, Dd, 1, 0, 1, 1, N, 1, M, 0, Dm),
     ('VNMUL<c>.F32 <Sd>, <Sn>, <Sm>', 1, 1, 1, 0, 1, 1, 1, 0, 0, D, 1, 0, Sn, Sd, 1, 0, 1, 0, N, 1, M, 0, Sm),
 
+    ## TODO: distinguish between these two VPOP
     ('VPOP <list>', 1, 1, 1, 0, 1, 1, 0, 0, 1, D, 1, 1, 1, 1, 0, 1, Dd, 1, 0, 1, 1, imm8),
-    ('VPOP <list>', 1, 1, 1, 0, 1, 1, 0, 0, 1, D, 1, 1, 1, 1, 0, 1, Sd, 1, 0, 1, 1, imm8),
+    ('VPOP <list>', 1, 1, 1, 0, 1, 1, 0, 0, 1, D, 1, 1, 1, 1, 0, 1, Sd, 1, 0, 1, 0, imm8),
 
     ('VPUSH<c> <list>', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 1, 0, 1, 1, 0, 1, Dd, 1, 0, 1, 1, imm8),
     ('VPUSH<c> <list>', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 1, 0, 1, 1, 0, 1, Sd, 1, 0, 1, 0, imm8),
@@ -275,8 +276,9 @@ armvfp = [
     ('VLDMIA<c> <Rn>, <list>', cond, 1, 1, 0, 0, 1, D, 0, 1, Rn, Sd, 1, 0, 1, 0, imm8),
     ('VLDMIA<c> <Rn>!, <list>', cond, 1, 1, 0, 0, 1, D, 1, 1, Rn, Sd, 1, 0, 1, 0, imm8),
     ('VLDMDB<c> <Rn>!, <list>', cond, 1, 1, 0, 1, 0, D, 1, 1, Rn, Sd, 1, 0, 1, 0, imm8),
+    ## TODO: distinguish between these two VPOP
     ('VPOP <list>', cond, 1, 1, 0, 0, 1, D, 1, 1, 1, 1, 0, 1, Dd, 1, 0, 1, 1, imm8),
-    ('VPOP <list>', cond, 1, 1, 0, 0, 1, D, 1, 1, 1, 1, 0, 1, Sd, 1, 0, 1, 1, imm8),
+    ('VPOP <list>', cond, 1, 1, 0, 0, 1, D, 1, 1, 1, 1, 0, 1, Sd, 1, 0, 1, 0, imm8),
     ('VLDR<c> <Dd>, [<Rn>{, #+<imm>}]', cond, 1, 1, 0, 1, 1, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm8),
     ('VLDR<c> <Dd>, [<Rn>, #-<imm>]', cond, 1, 1, 0, 1, 0, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm8),
     #('VLDR<c> <Dd>, <label>', cond, 1, 1, 0, 1, U, D, 0, 1, Rn, Vd, 1, 0, 1, 1, imm8), FIXME U depends on value of label

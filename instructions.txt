@@ -347,6 +347,10 @@ VDUP (scalar)
 VDUP (ARM core register)
 VEOR
 VEXT
+VFMA
+VFMS
+VFNMA
+VFNMS
 VHADD
 VHSUB
 VLD1 (multiple single elements)
@@ -362,6 +366,8 @@ VLD4 (multiple 4-element structures)
 VLD4 (single 4-element structure to one lane)
 VLD4 (single 4-element structure to all lanes)
 VLDM
+VLDMDB
+VLDMIA
 VLDR
 VMAX
 VMIN (integer)
@@ -464,6 +470,8 @@ VST3 (single 3-element structure from one lane)
 VST4 (multiple 4-element structures)
 VST4 (single 4-element structure from one lane)
 VSTM
+VSTMDB
+VSTMIA
 VSTR
 VSUB (integer)
 VSUB (floating-point)

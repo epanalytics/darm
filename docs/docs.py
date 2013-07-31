@@ -4,6 +4,7 @@ import darmbits
 import darmtbl
 import darmtblthumb
 import darmtblthumb2
+import darmtblvfp
 
 def html_styles():
     s = '<style type="text/css">\n'
@@ -76,8 +77,8 @@ def make_doc(desc, size, insns, fname):
 def main():
     make_doc('Thumb Instruction Encodings (16-bit)', 16, darmtblthumb.thumbs, 'thumb.html')
     make_doc('Thumb2 Instruction Encodings (16-bit)', 16, darmtblthumb2.thumb16, 'thumb2_16.html')
-    make_doc('Thumb2 Instruction Encodings (32-bit)', 32, darmtblthumb2.thumb32, 'thumb2.html')
-    make_doc('ARMv7 Instruction Encodings (32-bit)', 32, darmtbl.ARMv7, 'armv7.html')
+    make_doc('Thumb2 Instruction Encodings (32-bit)', 32, darmtblthumb2.thumb32 + darmtblvfp.thumbvfp, 'thumb2.html')
+    make_doc('ARMv7 Instruction Encodings (32-bit)', 32, darmtbl.ARMv7 + darmtblvfp.armvfp, 'armv7.html')
 
 if __name__ == '__main__':
     main()

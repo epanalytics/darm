@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "armv7-tbl.h"
 #include "thumb-tbl.h"
+#include "vfp-tbl.h"
 
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -82,6 +83,7 @@ typedef enum _darm_option_t {
 typedef enum _darm_mode_t {
     M_ARM,
     M_THUMB, M_THUMB2_16, M_THUMB2,
+    M_ARM_VFP, M_THUMB2_VFP,
 
     M_INVLD = -1,
 } darm_mode_t;
@@ -150,6 +152,9 @@ typedef struct _darm_t {
     // rotation value
     uint32_t        rotate;
 
+    // data type for VFP/SIMD
+    darm_datatype_t dtype;
+
     // register operands
     darm_reg_t      Rd; // destination
     darm_reg_t      Rn; // first operand
@@ -215,6 +220,7 @@ int darm_immshift_decode(const darm_t *d, const char **type,
 
 const char *darm_mnemonic_name(darm_instr_t instr);
 const char *darm_enctype_name(darm_enctype_t enctype);
+const char *darm_any_register_name(darm_reg_t reg, darm_datatype_t dtype);
 const char *darm_register_name(darm_reg_t reg);
 const char *darm_shift_type_name(darm_shift_type_t shifttype);
 
@@ -256,10 +262,11 @@ int32_t sign_ext32(int32_t v, uint32_t len);
 #define BITMSK_15 ((1 << 15) - 1)
 #define BITMSK_16 ((1 << 16) - 1)
 #define BITMSK_24 ((1 << 24) - 1)
-#define GETBT(__v, __o, __n) ((__v >> __o) & BITMSK_ ## __n)
+#define GETBT(__v, __o, __n) ((__v >> __o) & ((1 << __n) - 1))
 #define IS_THUMB2_32BIT(__sw) ((((__sw >> 13) & 0b111) == 0b111) && (((__sw >> 11) & 0b11) != 0b00))
 #define THUMB_INSTR_LOOKUP(__v) (thumb_instr_lookup[GETBT(__v, 6, 10)])
 #define THUMB2_16_INSTR_LOOKUP(__v) (thumb2_16_instr_lookup[GETBT(__v, 5, 7)])
 #define THUMB2_INSTR_LOOKUP(__v) (thumb2_instr_lookup[(GETBT(__v, 20, 9) << 1) | GETBT(__v, 15, 1)])
+#define VFP_INSTR_LOOKUP(__v) (vfp_lookup[(GETBT(__v, 16, 10) << 4) | (GETBT(__v, 6, 3) << 1) | GETBT(__v, 4, 1)])
 
 #endif

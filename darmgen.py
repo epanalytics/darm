@@ -26,6 +26,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
+import darmbits as db
 import darmtbl
 import darmtblthumb
 import darmtblthumb2
@@ -59,6 +60,13 @@ def struct_definition(name, arr):
     return 'typedef struct _%s {\n' % (name) +\
         string.join(['    ' + a[i][1] + '  ' + a[i][0] + ';' for i in range(len(arr))], '\n') +\
         '} %s;\n\n' % (name)
+
+def enum_definition(name, prepend, arr):
+    s = 'typedef enum _%s {\n' % (name)
+    for t in arr:
+        s += prepend + '_' + t + ','
+    s += '\n' + prepend + '_INVLD = -1 } %s;' % (name)
+    return s
 
 def bins(n, l):
     s = bin(n)
@@ -192,6 +200,10 @@ def format_string(full):
         # implied shift TBH
         'LSL #1', 'S',
 
+        # VFP/SIMD data type
+        '.F64', 'D',
+        '.F32', 'F',
+
         # memory address
         '[<Rn>,<Rm>]', 'M',
         '[<Rn>,#<imm5>]', 'M',
@@ -213,10 +225,16 @@ def format_string(full):
         '<Rd3>', 'd',
         '<Rdn>', 'd',
         '<Rdn3>', 'd',
+        '<Dd>', 'd',
+        '<Sd>', 'd',
         '<Rn>', 'n',
         '<Rn3>', 'n',
+        '<Dn>', 'n',
+        '<Sn>', 'n',
         '<Rm>', 'm',
         '<Rm3>', 'm',
+        '<Dm>', 'm',
+        '<Sm>', 'm',
         '<Ra>', 'a',
         '<Rt>', 't',
         '<Rt2>', '2',
@@ -332,6 +350,132 @@ d = darmtbl
 d2 = darmtblthumb
 d3 = darmtblthumb2
 
+def bit_crossp(insn):
+    identifier = []
+    for field in insn[1:]:
+        if field == 0 or field == (0):
+            identifier.append('0')
+        elif field == 1 or field == (1):
+            identifier.append('1')
+        else:
+            identifier += ['01'] * field.bitsize
+
+    return identifier
+
+def bit_index(bits):
+    t = 0
+    c = 1
+    for b in range(len(bits)-1,-1,-1):
+        if bits[b] == '1':
+            t += c
+        c *= 2
+    return t
+
+def apply_mask(crossp, mask):
+    res = []
+    for b in range(len(mask)-1,-1,-1):
+        if mask[b] == '1':
+            res.insert(0, crossp[b])
+    return res
+
+def generate_mask(table, size):
+    all_insns = []
+    for insn in table:
+        crossp = bit_crossp(insn)
+        all_insns.append(crossp)
+    poss = []
+    for i in range(size):
+        t = {}
+        for insn in all_insns:
+            t[insn[i]] = True
+        poss.append(t)
+
+    mask = '0' * size
+
+    #print poss
+    for i in range(size):
+        if poss[i].has_key('0') and poss[i].has_key('1'):
+            mask = mask[0:i] + '1' + mask[i+1:]
+        
+
+    return mask
+
+def bits_pos(insn, field):
+    p = 0
+    for f in reversed(insn[1:]):
+        l = 0
+        if f == 0 or f == 1 or f == (0) or f == (1):
+            l = 1
+        else:
+            l = f.bitsize
+
+        if field == f:
+            return p, l
+
+        p += l
+
+    return None, None
+
+def insert_field(insn, table, name, opts = []):
+    for n in [name] + opts:
+        p, l = bits_pos(insn, eval('db.%s' % n))
+        if p != None:
+            assert(not table.has_key(name))
+            table[name] = FieldGrab_ShiftMask((p, l))
+    
+
+class FieldGrab:
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return '{.type = %s}' % ('F_INVLD')
+
+class FieldGrab_StringConst(FieldGrab):
+    def __init__(self, string):
+        self.str = string
+
+    def __repr__(self):
+        return '{.type = %s, .str = "%s"}' % ('F_STRING_CONST', self.str)
+
+class FieldGrab_ShiftMask(FieldGrab):
+    def __init__(self, tup):
+        self.shift = int(tup[0])
+        self.bits = int(tup[1])
+
+    def __repr__(self):
+        return '{.type = %s, .shift = %d, .mask = %d}' % ('F_SHIFT_MASK', self.shift, self.bits)
+
+class InstructionLoad:
+    def __init__(self, i):
+        self.insn = i
+
+    def __str__(self):
+        t = {}
+        desc = self.insn[0]
+        t['desc'] = FieldGrab_StringConst(desc)
+        t['format'] = '"' + format_string(desc) + '"'
+        t['instr'] = 'I_' + instruction_name(desc)
+        t['dtype'] = 'D_INVLD'
+        if desc.find('.F32') >= 0:
+            t['dtype'] = 'D_F32'
+        elif desc.find('.F64') >= 0:
+            t['dtype'] = 'D_F64'
+
+        insert_field(self.insn, t, 'cond')
+        insert_field(self.insn, t, 'Rn', ['Sn', 'Dn'])
+        insert_field(self.insn, t, 'Rd', ['Sd', 'Dd'])
+        insert_field(self.insn, t, 'Rm', ['Sm', 'Dm'])
+
+        s = '{'
+        for k in t:
+            s += '.%s = %s, ' % (k, str(t[k]))
+        s += '},'
+        return s
+
+    def __repr__(self):
+        return str(self)
+
 def notype(*x):
     return (0,) + x
 
@@ -346,7 +490,6 @@ def thumb2_16(*x):
 
 def thumb2(*x):
     return (4,) + x
-
 
 # we specify various instruction types
 instr_types = [
@@ -533,6 +676,10 @@ instr_types = [
     thumb2('TABLE_BRANCH', 'Table branch',
            ['ins<c> <Rn> <Rm>'],
            lambda x, y, z: y[0:10] == ('0', '1', '0', '0', '0', '1', '1', '0', '1', '1')),
+
+    # vfp, these are dummies that never are found true, but create the correct type T_<class>_VFP
+    armv7('VFP', 'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
+    thumb2('VFP', 'VFP/SIMD', ['ins'], lambda x, y, z: False),
 ]
 
 if __name__ == '__main__':
@@ -655,6 +802,8 @@ if __name__ == '__main__':
     print('extern const char *darm_mnemonics[%d];' % count)
     print('extern const char *darm_enctypes[%d];' % len(instr_types))
     print('extern const char *darm_registers[16];')
+    print('extern const char *darm_F32_registers[16];')
+    print('extern const char *darm_F64_registers[16];')
 
     # define constants 0b0 up upto 0b11111111
     for x in range(256):
@@ -668,8 +817,30 @@ if __name__ == '__main__':
 
     print(struct_definition('darm_lookup_t',\
                                 [['instr', 'uint32_t'],\
-                                ['instr_type', 'uint32_t'],\
-                                ['format', 'char*']]))
+                                 ['instr_type', 'uint32_t'],\
+                                 ['format', 'char*']]))
+
+    print(enum_definition('darm_field_t', 'F',\
+                          ['SHIFT_MASK', 'STRING_CONST']))
+
+    print(enum_definition('darm_datatype_t', 'D',\
+                          ['F32', 'F64']))
+
+    print(struct_definition('darm_fieldgrab_t',\
+                                [['type', 'darm_field_t'],\
+                                 ['str', 'const char*'],\
+                                 ['shift', 'uint32_t'],\
+                                 ['mask', 'uint32_t']]))
+
+    print(struct_definition('darm_fieldloader_t',\
+                                [['desc', 'darm_fieldgrab_t'],\
+                                 ['instr', 'darm_instr_t'],\
+                                 ['format', 'const char*'],\
+                                 ['dtype', 'darm_datatype_t'],\
+                                 ['cond', 'darm_fieldgrab_t'],\
+                                 ['Rm', 'darm_fieldgrab_t'],\
+                                 ['Rd', 'darm_fieldgrab_t'],\
+                                 ['Rn', 'darm_fieldgrab_t']]))
 
     print('#endif')
 
@@ -680,8 +851,8 @@ if __name__ == '__main__':
     magic_open('thumb-tbl.h')
 
     # print required headers
-    print('#ifndef __THUMB_TBL__')
-    print('#define __THUMB_TBL__')
+    print('#ifndef __DARM_THUMB_TBL__')
+    print('#define __DARM_THUMB_TBL__')
     print('#include <stdint.h>')
     print('#include "darm-tbl.h"')
 
@@ -700,8 +871,8 @@ if __name__ == '__main__':
     magic_open('armv7-tbl.h')
 
     # print required headers
-    print('#ifndef __ARMV7_TBL__')
-    print('#define __ARMV7_TBL__')
+    print('#ifndef __DARM_ARMV7_TBL__')
+    print('#define __DARM_ARMV7_TBL__')
     print('#include <stdint.h>')
     print('#include "darm-tbl.h"')
 
@@ -741,6 +912,13 @@ if __name__ == '__main__':
 
     reg = 'r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 SP LR PC'
     print(string_table('darm_registers', reg.split()))
+
+    reg_F32 = ['s%d' % (i) for i in range(16)]
+    print(string_table('darm_F32_registers', reg_F32))
+
+    reg_F64 = ['d%d' % (i) for i in range(16)]
+    print(string_table('darm_F64_registers', reg_F64))
+
 
     #
     # thumb-tbl.c
@@ -901,3 +1079,53 @@ if __name__ == '__main__':
     print('const char *armv7_format_strings[%d][3] = {' % instrcnt)
     print('\n'.join(sorted(lines)))
     print('};')
+
+
+    #print generate_mask(darmtbl.ARMv7, 32)
+    #print generate_mask(darmtblthumb.thumbs, 16)
+    #print generate_mask(darmtblthumb2.thumb16, 16)
+    #print generate_mask(darmtblthumb2.thumb32, 32)
+    #print generate_mask(darmtblvfp.thumbvfp, 32)
+
+    t = darmtblvfp.armvfp
+    mask = generate_mask(t, 32)
+    #print mask
+    table = [None for i in range(2**mask.count('1'))]
+    for insn in t:
+        #print insn
+        crossp = apply_mask(bit_crossp(insn), mask)
+        #print crossp
+
+        loader = InstructionLoad(insn)
+        for p in itertools.product(*crossp):
+            idx = bit_index(p)
+            if table[idx] != None and False:
+                print 'WARNING_CONFLICT'
+                print idx
+                print table[idx]
+                print loader
+                print p
+                print mask
+                #assert(table[idx] == None)
+            table[idx] = loader
+
+    magic_open('vfp-tbl.h')
+    print('#ifndef __DARM_VFP_TBL__')
+    print('#define __DARM_VFP_TBL__')
+    print('#include <stdint.h>')
+    print('#include "darm-tbl.h"')
+
+    print('extern darm_fieldloader_t vfp_lookup[%d];' % (2**mask.count('1')))
+    print('#endif')
+
+    magic_open('vfp-tbl.c')
+    print('#include "vfp-tbl.h"')
+    print('darm_fieldloader_t vfp_lookup[%d] = {' % (2**mask.count('1')))
+    for i in range(len(table)):
+        if table[i] == None:
+            e = FieldGrab()
+            print('{ .format = 0, .instr = I_INVLD, .dtype = D_INVLD, .desc = %s, .cond = %s, .Rn = %s, .Rm = %s, .Rd = %s}, /* %d */' % (repr(e), repr(e), repr(e), repr(e), repr(e), i))
+        else:
+            print(repr(table[i]) + '/* %d */' % (i))
+    print('};')
+

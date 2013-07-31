@@ -203,6 +203,13 @@ struct {
     {0xe28fc601, 0, {
         .instr = I_ADR, .instr_type = T_ARM_ARITH_IMM, .cond = C_AL,
         .S = B_UNSET, .U = B_SET, .I = B_SET, .imm = 0x100000, .Rd = 12}},
+    {0xee367b07, 0, {
+        .instr = I_VADD, .instr_type = T_ARM_VFP, .cond = C_AL,
+        .dtype = D_F64, .Rd = 7, .Rn = 6, .Rm = 7}},
+    {0xee867b07, 0, {
+        .instr = I_VDIV, .instr_type = T_ARM_VFP, .cond = C_AL,
+        .dtype = D_F64, .Rd = 7, .Rn = 6, .Rm = 7}},
+
 
     // switch to thumb
     {0, 0, {.instr = I_INVLD}},
@@ -382,6 +389,7 @@ int main()
         if(p->RdLo == 0) p->RdLo = R_INVLD;
         if(p->Rs == 0) p->Rs = R_INVLD;
         if(p->option == 0) p->option = O_INVLD;
+        if(p->dtype == 0) p->dtype = D_INVLD;
 
         if(p->shift_type == S_LSL && p->Rs == R_INVLD && p->shift == 0) {
             p->shift_type = S_INVLD;
@@ -417,7 +425,7 @@ int main()
         if(ret != tests[i].r || C(w) || C(instr) || C(instr_type) ||
                 C(cond) || F(S) || F(E) || C(option) || F(U) || F(H) ||
                 F(P) || F(R) || F(W) || C(Rd) || C(Rn) || C(Rm) || C(Ra) ||
-                C(Rt) || C(RdHi) || C(RdLo) || F(I) || C(imm) ||
+                C(Rt) || C(RdHi) || C(RdLo) || F(I) || C(imm) || C(dtype) ||
                 C(shift_type) || C(Rs) || C(shift) || C(lsb) ||
                 C(width) || C(reglist) || F(T) || F(M) || F(N) ||
                 C(Rt2) || F(B)) {

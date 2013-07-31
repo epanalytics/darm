@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include "darm.h"
 #include "armv7-tbl.h"
+#include "vfp-tbl.h"
 
 #define ROR(val, rotate) (((val) >> (rotate)) | ((val) << (32 - (rotate))))
 
@@ -91,6 +92,40 @@ int darm_immshift_decode(const darm_t *d, const char **type,
             *immediate = 32;
         }
     }
+    return 0;
+}
+
+static int extract_insn_bits(darm_fieldgrab_t* t, uint32_t def, uint32_t w){
+    int ret = def;
+    if (F_SHIFT_MASK == t->type){
+        ret = GETBT(w, t->shift, t->mask);
+    }
+    return ret;
+}
+
+static char* extract_string_const(darm_fieldgrab_t* t, char* def){
+    char* ret = def;
+    if (F_STRING_CONST == t->type){
+        ret = t->str;
+    }
+    return ret;
+}
+
+static int armv7_disas_vfp(darm_t* d, uint32_t w)
+{
+    darm_fieldloader_t* f = &(VFP_INSTR_LOOKUP(w));
+    d->mode = M_ARM_VFP;
+    d->instr_type = T_ARM_VFP;
+    d->dtype = f->dtype;
+    d->instr = f->instr;
+
+    //printf("\t%s\n", extract_string_const(&(f->desc), "UNKNOWN"));
+    //printf("\t%s\n", f->format);
+    d->cond = extract_insn_bits(&(f->cond), d->cond, w);
+    d->Rn = extract_insn_bits(&(f->Rn), R_INVLD, w);
+    d->Rm = extract_insn_bits(&(f->Rm), R_INVLD, w);
+    d->Rd = extract_insn_bits(&(f->Rd), R_INVLD, w);
+
     return 0;
 }
 
@@ -799,16 +834,22 @@ int darm_armv7_disasm(darm_t *d, uint32_t w)
     d->shift_type = S_INVLD;
     d->S = d->E = d->U = d->H = d->P = d->I = B_INVLD;
     d->R = d->T = d->W = d->M = d->N = d->B = B_INVLD;
+    d->dtype = D_INVLD;
     d->Rd = d->Rn = d->Rm = d->Ra = d->Rt = R_INVLD;
     d->Rt2 = d->RdHi = d->RdLo = d->Rs = R_INVLD;
     d->option = O_INVLD;
     d->size = 4;
 
-    if(d->cond == C_UNCOND) {
-        ret = armv7_disas_uncond(d, w);
+    if (0b1110 == GETBT(w, 24, 4) && 0b101 == GETBT(w, 9, 3) && 0b0 == GETBT(w, 4, 1)){
+        ret = armv7_disas_vfp(d, w);
     }
     else {
-        ret = armv7_disas_cond(d, w);
+        if(d->cond == C_UNCOND) {
+            ret = armv7_disas_uncond(d, w);
+        }
+        else {
+            ret = armv7_disas_cond(d, w);
+        }
     }
 
     // return error
@@ -835,10 +876,25 @@ const char *darm_enctype_name(darm_enctype_t enctype)
         darm_enctypes[enctype] : NULL;
 }
 
+const char *darm_any_register_name(darm_reg_t reg, darm_datatype_t dtype){
+    if (dtype == D_INVLD){
+        return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_registers) ?
+            darm_registers[reg] : NULL;
+    }
+    else if (dtype == D_F32){
+        return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_F32_registers) ?
+            darm_F32_registers[reg] : NULL;
+    }
+    else if (dtype == D_F64){
+        return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_F64_registers) ?
+            darm_F64_registers[reg] : NULL;
+    }
+    return NULL;
+}
+
 const char *darm_register_name(darm_reg_t reg)
 {
-    return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_registers) ?
-        darm_registers[reg] : NULL;
+    return darm_any_register_name(reg, 0);
 }
 
 const char *darm_shift_type_name(darm_shift_type_t shifttype)
