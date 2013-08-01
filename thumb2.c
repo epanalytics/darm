@@ -224,7 +224,7 @@ int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
     d->shift_type = S_INVLD;
     d->S = d->E = d->U = d->H = d->P = d->I = B_INVLD;
     d->R = d->T = d->W = d->M = d->N = d->B = B_INVLD;
-    d->dtype = D_INVLD;
+    d->dtype = d->stype = D_INVLD;
     d->Rd = d->Rn = d->Rm = d->Ra = d->Rt = R_INVLD;
     d->Rt2 = d->RdHi = d->RdLo = d->Rs = R_INVLD;
     d->option = O_INVLD;

@@ -121,11 +121,13 @@ int darm_str(const darm_t *d, darm_str_t *str)
         //printf("got %c %d\n", ch, ch);
         switch (ch) {
         case 'D':
-            APPEND(mnemonic, ".F64");
+            APPEND(mnemonic, ".");
+            APPEND(mnemonic, darm_datatype_name(d->dtype));
             continue;
 
-        case 'F':
-            APPEND(mnemonic, ".F32");
+        case 'Y':
+            APPEND(mnemonic, ".");
+            APPEND(mnemonic, darm_datatype_name(d->stype));
             continue;
 
         case 's':
@@ -146,13 +148,13 @@ int darm_str(const darm_t *d, darm_str_t *str)
 
         case 'n':
             if(d->Rn == R_INVLD) break;
-            APPEND(args[arg], darm_any_register_name(d->Rn, d->dtype));
+            APPEND(args[arg], darm_any_register_name(d->Rn, (d->dtype == d->stype)? d->dtype: d->stype));
             arg++;
             continue;
 
         case 'm':
             if(d->Rm == R_INVLD) break;
-            APPEND(args[arg], darm_any_register_name(d->Rm, d->dtype));
+            APPEND(args[arg], darm_any_register_name(d->Rm, (d->dtype == d->stype)? d->dtype: d->stype));
             arg++;
             continue;
 
@@ -531,17 +533,22 @@ void darm_dump(const darm_t *d)
     }
 
     if(D_INVLD != d->dtype){
-        printf("dtype:         D_%s\n", d->dtype == D_F32? "F32" : "F64");
+        printf("dtype:         D_%s\n", darm_datatype_name(d->dtype));
+    }
+    if(D_INVLD != d->stype){
+        printf("stype:         D_%s\n", darm_datatype_name(d->stype));
     }
 
 #define PRINT_REG(reg) if(d->reg != R_INVLD) \
     printf("%-5s          %s\n", #reg ":", darm_register_name(d->reg))
-#define PRINT_ANY_REG(reg) if(d->reg != R_INVLD) \
+#define PRINT_DEST_REG(reg) if(d->reg != R_INVLD)                  \
     printf("%-5s          %s\n", #reg ":", darm_any_register_name(d->reg, d->dtype))
+#define PRINT_SOURCE_REG(reg) if(d->reg != R_INVLD)                  \
+    printf("%-5s          %s\n", #reg ":", darm_any_register_name(d->reg, (d->dtype == d->stype)? d->dtype: d->stype))
 
-    PRINT_ANY_REG(Rd);
-    PRINT_ANY_REG(Rn);
-    PRINT_ANY_REG(Rm);
+    PRINT_DEST_REG(Rd);
+    PRINT_SOURCE_REG(Rn);
+    PRINT_SOURCE_REG(Rm);
     PRINT_REG(Ra);
     PRINT_REG(Rt);
     PRINT_REG(Rt2);

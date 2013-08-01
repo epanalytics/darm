@@ -152,8 +152,9 @@ typedef struct _darm_t {
     // rotation value
     uint32_t        rotate;
 
-    // data type for VFP/SIMD
-    darm_datatype_t dtype;
+    // datatypes for VFP/SIMD
+    darm_datatype_t dtype; // dest/overall datatype
+    darm_datatype_t stype; // source datatype
 
     // register operands
     darm_reg_t      Rd; // destination
@@ -194,7 +195,7 @@ typedef struct _darm_t {
 
 typedef struct _darm_str_t {
     // the full mnemonic, including extensions, flags, etc.
-    char mnemonic[12];
+    char mnemonic[24];
 
     // a representation of each argument in a separate string
     char arg[4][32];
@@ -218,6 +219,7 @@ int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2);
 int darm_immshift_decode(const darm_t *d, const char **type,
     uint32_t *immediate);
 
+const char *darm_datatype_name(darm_datatype_t dtype);
 const char *darm_mnemonic_name(darm_instr_t instr);
 const char *darm_enctype_name(darm_enctype_t enctype);
 const char *darm_any_register_name(darm_reg_t reg, darm_datatype_t dtype);

@@ -113,18 +113,38 @@ static char* extract_string_const(darm_fieldgrab_t* t, char* def){
 
 static int armv7_disas_vfp(darm_t* d, uint32_t w)
 {
+    int dp, ti, dd, m;
     darm_fieldloader_t* f = &(VFP_INSTR_LOOKUP(w));
     d->mode = M_ARM_VFP;
     d->instr_type = T_ARM_VFP;
     d->dtype = f->dtype;
+    d->stype = f->stype;
     d->instr = f->instr;
 
-    //printf("\t%s\n", extract_string_const(&(f->desc), "UNKNOWN"));
     //printf("\t%s\n", f->format);
     d->cond = extract_insn_bits(&(f->cond), d->cond, w);
     d->Rn = extract_insn_bits(&(f->Rn), R_INVLD, w);
     d->Rm = extract_insn_bits(&(f->Rm), R_INVLD, w);
     d->Rd = extract_insn_bits(&(f->Rd), R_INVLD, w);
+
+    switch((uint32_t)d->instr){
+    case I_VCVT:
+        ti = GETBT(w, 18, 1);
+        dp = GETBT(w,  8, 1);
+        dd = GETBT(w, 22, 1);
+        m = GETBT(w, 5, 1);
+        if (ti){
+            d->Rd = (d->Rd << 1) | dd;
+            if (dp) d->Rm = (m << 4) | d->Rm;
+            else d->Rm = (d->Rm << 1) | m;
+        } else {
+            d->Rm = (d->Rm << 1) | m;
+            if (dp) d->Rd = (dd << 4) | d->Rd;
+            else d->Rd = (d->Rd << 1) | dd;
+        }
+
+        break;
+    }
 
     return 0;
 }
@@ -834,7 +854,7 @@ int darm_armv7_disasm(darm_t *d, uint32_t w)
     d->shift_type = S_INVLD;
     d->S = d->E = d->U = d->H = d->P = d->I = B_INVLD;
     d->R = d->T = d->W = d->M = d->N = d->B = B_INVLD;
-    d->dtype = D_INVLD;
+    d->dtype = d->stype = D_INVLD;
     d->Rd = d->Rn = d->Rm = d->Ra = d->Rt = R_INVLD;
     d->Rt2 = d->RdHi = d->RdLo = d->Rs = R_INVLD;
     d->option = O_INVLD;
@@ -876,20 +896,26 @@ const char *darm_enctype_name(darm_enctype_t enctype)
         darm_enctypes[enctype] : NULL;
 }
 
+const char *darm_datatype_name(darm_datatype_t dtype){
+    return dtype < ARRAYSIZE(darm_datatypes) ?
+        darm_datatypes[dtype] : NULL;
+}
+
 const char *darm_any_register_name(darm_reg_t reg, darm_datatype_t dtype){
-    if (dtype == D_INVLD){
-        return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_registers) ?
-            darm_registers[reg] : NULL;
-    }
-    else if (dtype == D_F32){
+    if (D_F32 == dtype){
         return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_F32_registers) ?
             darm_F32_registers[reg] : NULL;
     }
-    else if (dtype == D_F64){
+    else if (D_F64 == dtype){
         return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_F64_registers) ?
             darm_F64_registers[reg] : NULL;
     }
-    return NULL;
+    else if (D_S32 == dtype){
+        return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_S_registers) ?
+            darm_S_registers[reg] : NULL;
+    }
+    return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_registers) ?
+        darm_registers[reg] : NULL;
 }
 
 const char *darm_register_name(darm_reg_t reg)

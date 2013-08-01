@@ -35,6 +35,11 @@ import itertools
 import string
 import sys
 import textwrap
+import re
+
+dtypes = 'F64 F32 F16 S32 S16 U32 U16'.split()
+dtype_re_1 = re.compile('.*\.([F|S|U]\d\d)$')
+dtype_re_2 = re.compile('.*\.([F|S|U]\d\d)\.([F|S|U]\d\d)$')
 
 # armv7_lookup_bits = 8     # XXXXXXXX........ ................
 thumb_lookup_bits = 10      # XXXXXXXXXX......
@@ -60,13 +65,6 @@ def struct_definition(name, arr):
     return 'typedef struct _%s {\n' % (name) +\
         string.join(['    ' + a[i][1] + '  ' + a[i][0] + ';' for i in range(len(arr))], '\n') +\
         '} %s;\n\n' % (name)
-
-def enum_definition(name, prepend, arr):
-    s = 'typedef enum _%s {\n' % (name)
-    for t in arr:
-        s += prepend + '_' + t + ','
-    s += '\n' + prepend + '_INVLD = -1 } %s;' % (name)
-    return s
 
 def bins(n, l):
     s = bin(n)
@@ -200,9 +198,15 @@ def format_string(full):
         # implied shift TBH
         'LSL #1', 'S',
 
-        # VFP/SIMD data type
+        # VFP/SIMD data types
+        'DD', 'DY',
         '.F64', 'D',
-        '.F32', 'F',
+        '.F32', 'D',
+        '.F16', 'D',
+        '.S32', 'D',
+        '.S16', 'D',
+        '.U32', 'D',
+        '.U16', 'D',
 
         # memory address
         '[<Rn>,<Rm>]', 'M',
@@ -453,14 +457,19 @@ class InstructionLoad:
     def __str__(self):
         t = {}
         desc = self.insn[0]
-        t['desc'] = FieldGrab_StringConst(desc)
+        #t['desc'] = FieldGrab_StringConst(desc)
         t['format'] = '"' + format_string(desc) + '"'
         t['instr'] = 'I_' + instruction_name(desc)
+
         t['dtype'] = 'D_INVLD'
-        if desc.find('.F32') >= 0:
-            t['dtype'] = 'D_F32'
-        elif desc.find('.F64') >= 0:
-            t['dtype'] = 'D_F64'
+        t['stype'] = 'D_INVLD'
+        r = dtype_re_1.findall(desc.split()[0])
+        if len(r) > 0:
+            t['dtype'] = 'D_' + r[0]
+        r = dtype_re_2.findall(desc.split()[0])
+        if len(r) > 0:
+            t['dtype'] = 'D_' + r[0][0]
+            t['stype'] = 'D_' + r[0][1]
 
         insert_field(self.insn, t, 'cond')
         insert_field(self.insn, t, 'Rn', ['Sn', 'Dn'])
@@ -804,6 +813,8 @@ if __name__ == '__main__':
     print('extern const char *darm_registers[16];')
     print('extern const char *darm_F32_registers[16];')
     print('extern const char *darm_F64_registers[16];')
+    print('extern const char *darm_S_registers[16];')
+    print('extern const char *darm_datatypes[%d];' % (len(dtypes) + 1))
 
     # define constants 0b0 up upto 0b11111111
     for x in range(256):
@@ -820,11 +831,11 @@ if __name__ == '__main__':
                                  ['instr_type', 'uint32_t'],\
                                  ['format', 'char*']]))
 
-    print(enum_definition('darm_field_t', 'F',\
-                          ['SHIFT_MASK', 'STRING_CONST']))
+    print(enum_table('darm_field', ['F_%s' % (i)\
+                     for i in ['INVLD', 'SHIFT_MASK', 'STRING_CONST']]))
 
-    print(enum_definition('darm_datatype_t', 'D',\
-                          ['F32', 'F64']))
+    print(enum_table('darm_datatype', ['D_%s' % (i)\
+                     for i in ['INVLD'] + dtypes]))
 
     print(struct_definition('darm_fieldgrab_t',\
                                 [['type', 'darm_field_t'],\
@@ -833,10 +844,10 @@ if __name__ == '__main__':
                                  ['mask', 'uint32_t']]))
 
     print(struct_definition('darm_fieldloader_t',\
-                                [['desc', 'darm_fieldgrab_t'],\
-                                 ['instr', 'darm_instr_t'],\
+                                [['instr', 'darm_instr_t'],\
                                  ['format', 'const char*'],\
                                  ['dtype', 'darm_datatype_t'],\
+                                 ['stype', 'darm_datatype_t'],\
                                  ['cond', 'darm_fieldgrab_t'],\
                                  ['Rm', 'darm_fieldgrab_t'],\
                                  ['Rd', 'darm_fieldgrab_t'],\
@@ -919,6 +930,10 @@ if __name__ == '__main__':
     reg_F64 = ['d%d' % (i) for i in range(16)]
     print(string_table('darm_F64_registers', reg_F64))
 
+    reg_S = ['s%d' % (i) for i in range(16)]
+    print(string_table('darm_S_registers', reg_S))
+
+    print(string_table('darm_datatypes', ['INVLD'] + dtypes))
 
     #
     # thumb-tbl.c
@@ -1124,7 +1139,7 @@ if __name__ == '__main__':
     for i in range(len(table)):
         if table[i] == None:
             e = FieldGrab()
-            print('{ .format = 0, .instr = I_INVLD, .dtype = D_INVLD, .desc = %s, .cond = %s, .Rn = %s, .Rm = %s, .Rd = %s}, /* %d */' % (repr(e), repr(e), repr(e), repr(e), repr(e), i))
+            print('{ .format = 0, .instr = I_INVLD, .dtype = D_INVLD, .stype = D_INVLD, .cond = %s, .Rn = %s, .Rm = %s, .Rd = %s}, /* %d */' % (repr(e), repr(e), repr(e), repr(e), i))
         else:
             print(repr(table[i]) + '/* %d */' % (i))
     print('};')
