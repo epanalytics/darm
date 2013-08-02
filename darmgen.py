@@ -49,8 +49,6 @@ thumb2_lookup_bits = 10     # ...XXXXXXXXX.... X...............
 thumb_lookup_bitMask =     '1111111111000000'
 thumb2_16_lookup_bitMask = '0000111111100000'
 thumb2_lookup_bitMask =    '0001111111110001' + '0000000000000000' # FIXME code didn't match above documentation
-thumbvfp_lookup_bitMask =  '0000001111110000' + '0000000111111111' # FIXME carve these out
-armvfp_lookup_bitMask =    '1111111111111111' + '1111111111111111'
 
 def selectBits(allBits, bitMask):
     assert(len(bitMask) == len(allBits))
@@ -206,7 +204,7 @@ def format_string(full):
         '.S32', 'D',
         '.S16', 'D',
         '.U32', 'D',
-        '.U16', 'D',
+       '.U16', 'D',
 
         # memory address
         '[<Rn>,<Rm>]', 'M',
@@ -215,6 +213,8 @@ def format_string(full):
         '[<Rn>,#+/-<imm8>]', 'M',
         '[<Rn>,#+/-<imm12>]', 'M',
         '[<Rn>,+/-<Rm>{,<shift>}]', 'M',
+        '[<Rn>,#+<imm>]', 'M',
+        '[<Rn>,#-<imm>]', 'M',
 
         # memory address with Rn as base register and an immediate or Rm
         # operand as offset
@@ -247,6 +247,7 @@ def format_string(full):
 
         # immediate values
         '#<const>', 'i',
+        '#<imm>', 'i',
         '#<imm2>', 'i',
         '#<imm3>', 'i',
         '#<imm4>', 'i',
@@ -404,7 +405,7 @@ def generate_mask(table, size):
 
     return mask
 
-def bits_pos(insn, field):
+def bits_pos(insn, field, inst = False):
     p = 0
     for f in reversed(insn[1:]):
         l = 0
@@ -413,34 +414,42 @@ def bits_pos(insn, field):
         else:
             l = f.bitsize
 
-        if field == f:
-            return p, l
+        if not inst and field == f:
+            return p, l, f
+        elif inst and isinstance(f, field):
+            return p, l, f
 
         p += l
 
-    return None, None
+    return None, None, None
 
 def insert_field(insn, table, name, opts = []):
     for n in [name] + opts:
-        p, l = bits_pos(insn, eval('db.%s' % n))
+        p, l, f = bits_pos(insn, eval('db.%s' % n))
         if p != None:
             assert(not table.has_key(name))
             table[name] = FieldGrab_ShiftMask((p, l))
-    
+
+def insert_field_imm(insn, table):
+    p, l, f = bits_pos(insn, db.imm, True)
+    if p != None:
+        assert(not table.has_key('imm'))
+        assert(isinstance(f, db.imm))
+        table['imm'] = FieldGrab_Immediate((p, l), f.args)    
 
 class FieldGrab:
     def __init__(self):
         pass
 
     def __repr__(self):
-        return '{.type = %s}' % ('F_INVLD')
+        return '{.type=%s}' % ('F_INVLD')
 
 class FieldGrab_StringConst(FieldGrab):
     def __init__(self, string):
         self.str = string
 
     def __repr__(self):
-        return '{.type = %s, .str = "%s"}' % ('F_STRING_CONST', self.str)
+        return '{.type=%s, .str="%s"}' % ('F_STRING_CONST', self.str)
 
 class FieldGrab_ShiftMask(FieldGrab):
     def __init__(self, tup):
@@ -448,7 +457,23 @@ class FieldGrab_ShiftMask(FieldGrab):
         self.bits = int(tup[1])
 
     def __repr__(self):
-        return '{.type = %s, .shift = %d, .mask = %d}' % ('F_SHIFT_MASK', self.shift, self.bits)
+        return '{.type=%s, .shift=%d, .mask=%d}' % ('F_SHIFT_MASK', self.shift, self.bits)
+
+class FieldGrab_Immediate(FieldGrab_ShiftMask):
+    def __init__(self, tup, iargs):
+        self.shift = int(tup[0])
+        self.bits = int(tup[1])
+
+        self.extend = 0
+        if iargs.has_key('s'):
+            self.extend = iargs['s']
+
+        self.mult = 0
+        if iargs.has_key('m'):
+            self.mult = iargs['m']
+
+    def __repr__(self):
+        return '{.type=%s, .shift=%d, .mask=%d, .extend=%d, .mult=%d}' % ('F_IMMEDIATE', self.shift, self.bits, self.extend, self.mult)
 
 class InstructionLoad:
     def __init__(self, i):
@@ -476,10 +501,12 @@ class InstructionLoad:
         insert_field(self.insn, t, 'Rd', ['Sd', 'Dd'])
         insert_field(self.insn, t, 'Rm', ['Sm', 'Dm'])
 
+        insert_field_imm(self.insn, t)
+
         s = '{'
         for k in t:
             s += '.%s = %s, ' % (k, str(t[k]))
-        s += '},'
+        s += '}'
         return s
 
     def __repr__(self):
@@ -687,8 +714,20 @@ instr_types = [
            lambda x, y, z: y[0:10] == ('0', '1', '0', '0', '0', '1', '1', '0', '1', '1')),
 
     # vfp, these are dummies that never are found true, but create the correct type T_<class>_VFP
-    armv7('VFP', 'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
-    thumb2('VFP', 'VFP/SIMD', ['ins'], lambda x, y, z: False),
+    armv7('FP',            'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
+    armv7('SIMD_DATAPROC', 'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
+    armv7('VFP_DATAPROC',  'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
+    armv7('VFP_LDST',      'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
+    armv7('SIMD_LDST',     'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
+    armv7('VFP_SHORTMOVE', 'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
+    armv7('VFP_LONGMOVE',  'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
+    thumb('FP',            'VFP/SIMD', ['ins'], lambda x, y, z: False),
+    thumb('SIMD_DATAPROC', 'VFP/SIMD', ['ins'], lambda x, y, z: False),
+    thumb('VFP_DATAPROC',  'VFP/SIMD', ['ins'], lambda x, y, z: False),
+    thumb('VFP_LDST',      'VFP/SIMD', ['ins'], lambda x, y, z: False),
+    thumb('SIMD_LDST',     'VFP/SIMD', ['ins'], lambda x, y, z: False),
+    thumb('VFP_SHORTMOVE', 'VFP/SIMD', ['ins'], lambda x, y, z: False),
+    thumb('VFP_LONGMOVE',  'VFP/SIMD', ['ins'], lambda x, y, z: False),
 ]
 
 if __name__ == '__main__':
@@ -832,7 +871,7 @@ if __name__ == '__main__':
                                  ['format', 'char*']]))
 
     print(enum_table('darm_field', ['F_%s' % (i)\
-                     for i in ['INVLD', 'SHIFT_MASK', 'STRING_CONST']]))
+                     for i in ['INVLD', 'SHIFT_MASK', 'STRING_CONST', 'IMMEDIATE']]))
 
     print(enum_table('darm_datatype', ['D_%s' % (i)\
                      for i in ['INVLD'] + dtypes]))
@@ -841,13 +880,16 @@ if __name__ == '__main__':
                                 [['type', 'darm_field_t'],\
                                  ['str', 'const char*'],\
                                  ['shift', 'uint32_t'],\
-                                 ['mask', 'uint32_t']]))
+                                 ['mask', 'uint32_t'],\
+                                 ['extend', 'uint32_t'],\
+                                 ['mult', 'uint32_t']]))
 
     print(struct_definition('darm_fieldloader_t',\
                                 [['instr', 'darm_instr_t'],\
                                  ['format', 'const char*'],\
                                  ['dtype', 'darm_datatype_t'],\
                                  ['stype', 'darm_datatype_t'],\
+                                 ['imm', 'darm_fieldgrab_t'],\
                                  ['cond', 'darm_fieldgrab_t'],\
                                  ['Rm', 'darm_fieldgrab_t'],\
                                  ['Rd', 'darm_fieldgrab_t'],\
@@ -1135,12 +1177,16 @@ if __name__ == '__main__':
 
     magic_open('vfp-tbl.c')
     print('#include "vfp-tbl.h"')
+
+    e = FieldGrab()
+    se = repr(e)
+    print('#define _EMPTY_LDR %s' % ('{ .format = 0, .instr = I_INVLD, .dtype = D_INVLD, .stype = D_INVLD, .cond = %s, .Rn = %s, .Rm = %s, .Rd = %s}' % (se, se, se, se)))
+
     print('darm_fieldloader_t vfp_lookup[%d] = {' % (2**mask.count('1')))
     for i in range(len(table)):
         if table[i] == None:
-            e = FieldGrab()
-            print('{ .format = 0, .instr = I_INVLD, .dtype = D_INVLD, .stype = D_INVLD, .cond = %s, .Rn = %s, .Rm = %s, .Rd = %s}, /* %d */' % (repr(e), repr(e), repr(e), repr(e), i))
+            print('_EMPTY_LDR,/* %d */' % (i))
         else:
-            print(repr(table[i]) + '/* %d */' % (i))
+            print(repr(table[i]) + ',/* %d */' % (i))
     print('};')
 

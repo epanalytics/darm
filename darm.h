@@ -265,10 +265,38 @@ int32_t sign_ext32(int32_t v, uint32_t len);
 #define BITMSK_16 ((1 << 16) - 1)
 #define BITMSK_24 ((1 << 24) - 1)
 #define GETBT(__v, __o, __n) ((__v >> __o) & ((1 << __n) - 1))
-#define IS_THUMB2_32BIT(__sw) ((((__sw >> 13) & 0b111) == 0b111) && (((__sw >> 11) & 0b11) != 0b00))
+
+// thumb/thumb2 helpers
+#define IS_THUMB2_32BIT(__sw) ((GETBT(__sw, 13, 3) == 0b111) && (GETBT(__sw, 11, 2) != 0b00))
 #define THUMB_INSTR_LOOKUP(__v) (thumb_instr_lookup[GETBT(__v, 6, 10)])
 #define THUMB2_16_INSTR_LOOKUP(__v) (thumb2_16_instr_lookup[GETBT(__v, 5, 7)])
 #define THUMB2_INSTR_LOOKUP(__v) (thumb2_instr_lookup[(GETBT(__v, 20, 9) << 1) | GETBT(__v, 15, 1)])
+
+// fp/simd helpers
+#define IS_ARM_SIMD_DPI(__sw) (GETBT(__sw, 25, 7) == 0b1111001)
+#define IS_ARM_VFP_DPI(__sw) (GETBT(__sw, 24, 4) == 0b1110 && GETBT(__sw, 9, 3) == 0b101 && GETBT(__sw, 4, 1) == 0b0)
+#define IS_ARM_VFP_LDST(__sw) (GETBT(__sw, 25, 3) == 0b110 && GETBT(__sw, 9, 3) == 0b101)
+#define IS_ARM_SIMD_LDST(__sw) (GETBT(__sw, 24, 8) == 0b11110100 && GETBT(__sw, 20, 1) == 0b0)
+#define IS_ARM_VFP_SHRTMV(__sw) (GETBT(__sw, 24, 4) == 0b1110 && GETBT(__sw, 9, 3) == 0b101 && GETBT(__sw, 4, 1) == 0b1)
+#define IS_ARM_VFP_LONGMV(__sw) (GETBT(__sw, 21, 7) == 0b1100010 && GETBT(__sw, 9, 3) == 0b101)
+#define IS_ARM_VFP(__sw) (IS_ARM_VFP_DPI(__sw) || IS_ARM_VFP_LDST(__sw) || IS_ARM_VFP_SHRTMV(__sw) || IS_ARM_VFP_LONGMV(__sw))
+#define IS_ARM_SIMD(__sw) (IS_ARM_SIMD_DPI(__sw) || IS_ARM_SIMD_LDST(__sw))
+#define IS_ARM_FP(__sw) (IS_ARM_VFP(__sw) || IS_ARM_SIMD(__sw))
+
+#define IS_THUMB_SIMD_DPI(__sw) (GETBT(__sw, 29, 3) == 0b111 && GETBT(__sw, 24, 4) == 0b1111)
+#define IS_THUMB_VFP_DPI(__sw) (GETBT(__sw, 29, 3) == 0b111 && GETBT(__sw, 24, 4) == 0b1110 && GETBT(__sw, 9, 3) == 0b101 && GETBT(__sw, 4, 1) == 0b0)
+#define IS_THUMB_VFP_LDST(__sw) (GETBT(__sw, 29, 3) == 0b111 && GETBT(__sw, 25, 3) == 0b110 && GETBT(__sw, 9, 3) == 0b101)
+#define IS_THUMB_SIMD_LDST(__sw) (GETBT(__sw, 24, 8) == 0b11111001 && GETBT(__sw, 20, 1) == 0b0)
+#define IS_THUMB_VFP_SHRTMV(__sw) (GETBT(__sw, 29, 3) == 0b111 && GETBT(__sw, 24, 4) == 0b1110 && GETBT(__sw, 9, 3) == 0b101 && GETBT(__sw, 4, 1) == 0b1)
+#define IS_THUMB_VFP_LONGMV(__sw) (GETBT(__sw, 29, 3) == 0b111 && GETBT(__sw, 21, 7) == 0b1100010 && GETBT(__sw, 9, 3) == 0b101)
+#define IS_THUMB_VFP(__sw) (IS_THUMB_VFP_DPI(__sw) || IS_THUMB_VFP_LDST(__sw) || IS_THUMB_VFP_SHRTMV(__sw) || IS_THUMB_VFP_LONGMV(__sw))
+#define IS_THUMB_SIMD(__sw) (IS_THUMB_SIMD_DPI(__sw) || IS_THUMB_SIMD_LDST(__sw))
+#define IS_THUMB_FP(__sw) (IS_THUMB_VFP(__sw) || IS_THUMB_SIMD(__sw))
+
+#define IS_FP(__sw) (IS_ARM_FP(__sw) || IS_THUMB_FP(__sw))
+#define IS_SIMD(__sw) (IS_ARM_SIMD(__sw) || IS_THUMB_SIMD(__sw))
+#define IS_VFP(__sw) (IS_ARM_VFP(__sw) || IS_THUMB_VFP(__sw))
+
 #define VFP_INSTR_LOOKUP(__v) (vfp_lookup[(GETBT(__v, 16, 10) << 4) | (GETBT(__v, 6, 3) << 1) | GETBT(__v, 4, 1)])
 
 #endif

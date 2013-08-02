@@ -204,17 +204,23 @@ struct {
         .instr = I_ADR, .instr_type = T_ARM_ARITH_IMM, .cond = C_AL,
         .S = B_UNSET, .U = B_SET, .I = B_SET, .imm = 0x100000, .Rd = 12}},
     {0xee367b07, 0, {
-        .instr = I_VADD, .instr_type = T_ARM_VFP, .cond = C_AL,
+        .instr = I_VADD, .instr_type = T_ARM_VFP_DATAPROC, .cond = C_AL,
         .dtype = D_F64, .Rd = 7, .Rn = 6, .Rm = 7}},
     {0xee867b07, 0, {
-        .instr = I_VDIV, .instr_type = T_ARM_VFP, .cond = C_AL,
+        .instr = I_VDIV, .instr_type = T_ARM_VFP_DATAPROC, .cond = C_AL,
         .dtype = D_F64, .Rd = 7, .Rn = 6, .Rm = 7}},
     {0xeeb87be5, 0, {
-        .instr = I_VCVT, .instr_type = T_ARM_VFP, .cond = C_AL,
+        .instr = I_VCVT, .instr_type = T_ARM_VFP_DATAPROC, .cond = C_AL,
         .dtype = D_F64, .stype = D_S32, .Rd = 7, .Rm = 11}},
     {0xeefd6bc7, 0, {
-        .instr = I_VCVT, .instr_type = T_ARM_VFP, .cond = C_AL,
+        .instr = I_VCVT, .instr_type = T_ARM_VFP_DATAPROC, .cond = C_AL,
         .dtype = D_S32, .stype = D_F64, .Rd = 13, .Rm = 7}},
+    {0xed126b01, 0, {
+            .instr = I_VLDR, .instr_type = T_ARM_VFP_LDST, .cond = C_AL,
+            .dtype = D_F64, .Rd = 6, .Rn = 2, .I = B_SET, .imm = -4}},
+    {0xed926b01, 0, {
+            .instr = I_VLDR, .instr_type = T_ARM_VFP_LDST, .cond = C_AL,
+            .dtype = D_F64, .Rd = 6, .Rn = 2, .I = B_SET, .imm = 4}},
 
     // switch to thumb
     {0, 0, {.instr = I_INVLD}},

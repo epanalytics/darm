@@ -99,8 +99,8 @@ thumbvfp = [
     ('VLDMIA<c> <Rn>!, <list>', 1, 1, 1, 0, 1, 1, 0, 0, 1, D, 1, 1, Rn, Sd, 1, 0, 1, 0, imm8),
     ('VLDMDB<c> <Rn>!, <list>', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 1, 1, Rn, Sd, 1, 0, 1, 0, imm8),
 
-    ('VLDR<c> <Dd>, [<Rn>{, #+<imm>}]', 1, 1, 1, 0, 1, 1, 0, 1, 1, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm8),
-    ('VLDR<c> <Dd>, [<Rn>, #-<imm>]', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm8),
+    ('VLDR<c> <Dd>, [<Rn>,#+<imm>]', 1, 1, 1, 0, 1, 1, 0, 1, 1, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm8),
+    ('VLDR<c> <Dd>, [<Rn>,#-<imm>]', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm8),
     #('VLDR<c> <Dd>, <label>', 1, 1, 1, 0, 1, 1, 0, 1, U, D, 0, 1, Rn, Vd, 1, 0, 1, 1, imm8), FIXME U depends on value of label
     #('VLDR<c> <Dd>, [PC, #-0]', 1, 1, 1, 0, 1, 1, 0, 1, U, D, 0, 1, Rn, Vd, 1, 0, 1, 1, imm8),
 
@@ -164,10 +164,10 @@ thumbvfp = [
     ('VSTMIA<c> <Rn>, <list>' , 1, 1, 1, 0, 1, 1, 0, 0, 1, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
     ('VSTMIA<c> <Rn>!, <list>', 1, 1, 1, 0, 1, 1, 0, 0, 1, D, 1, 0, Rn, Sd, 1, 0, 1, 0, imm8),
     ('VSTMDB<c> <Rn>!, <list>', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 1, 0, Rn, Sd, 1, 0, 1, 0, imm8),
-    ('VSTR<c> <Dd>, [<Rn>{, #+<imm>}]', 1, 1, 1, 0, 1, 1, 0, 1, 1, D, 0, 0, Rn, Dd, 1, 0, 1, 1, imm8),
-    ('VSTR<c> <Dd>, [<Rn>, #-<imm>]', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 0, 0, Rn, Dd, 1, 0, 1, 1, imm8),
-    ('VSTR<c> <Sd>, [<Rn>{, #+<imm>}]', 1, 1, 1, 0, 1, 1, 0, 1, 1, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
-    ('VSTR<c> <Sd>, [<Rn>, #-<imm>]', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
+    ('VSTR<c> <Dd>, [<Rn>,#+<imm>]', 1, 1, 1, 0, 1, 1, 0, 1, 1, D, 0, 0, Rn, Dd, 1, 0, 1, 1, imm8),
+    ('VSTR<c> <Dd>, [<Rn>,#-<imm>]', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 0, 0, Rn, Dd, 1, 0, 1, 1, imm8),
+    ('VSTR<c> <Sd>, [<Rn>,#+<imm>]', 1, 1, 1, 0, 1, 1, 0, 1, 1, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
+    ('VSTR<c> <Sd>, [<Rn>,#-<imm>]', 1, 1, 1, 0, 1, 1, 0, 1, 0, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
 
     ('VSUB<c>.F64 <Dd>, <Dn>, <Dm>', 1, 1, 1, 0, 1, 1, 1, 0, 0, D, 1, 1, Dn, Dd, 1, 0, 1, 1, N, 1, M, 0, Dm),    
     ('VSUB<c>.F32 <Sd>, <Sn>, <Sm>', 1, 1, 1, 0, 1, 1, 1, 0, 0, D, 1, 1, Sn, Sd, 1, 0, 1, 0, N, 1, M, 0, Sm)
@@ -264,10 +264,10 @@ armvfp = [
     ('VSTMIA<c> <Rn>, <list>' , cond, 1, 1, 0, 0, 1, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
     ('VSTMIA<c> <Rn>!, <list>', cond, 1, 1, 0, 0, 1, D, 1, 0, Rn, Sd, 1, 0, 1, 0, imm8),
     ('VSTMDB<c> <Rn>!, <list>', cond, 1, 1, 0, 1, 0, D, 1, 0, Rn, Sd, 1, 0, 1, 0, imm8),
-    ('VSTR<c> <Dd>, [<Rn>{, #+<imm>}]', cond, 1, 1, 0, 1, 1, D, 0, 0, Rn, Dd, 1, 0, 1, 1, imm8),
-    ('VSTR<c> <Dd>, [<Rn>, #-<imm>]', cond, 1, 1, 0, 1, 0, D, 0, 0, Rn, Dd, 1, 0, 1, 1, imm8),
-    ('VSTR<c> <Sd>, [<Rn>{, #+<imm>}]', cond, 1, 1, 0, 1, 1, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
-    ('VSTR<c> <Sd>, [<Rn>, #-<imm>]', cond, 1, 1, 0, 1, 0, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
+    ('VSTR<c> <Dd>, [<Rn>,#+<imm>]', cond, 1, 1, 0, 1, 1, D, 0, 0, Rn, Dd, 1, 0, 1, 1, imm8),
+    ('VSTR<c> <Dd>, [<Rn>,#-<imm>]', cond, 1, 1, 0, 1, 0, D, 0, 0, Rn, Dd, 1, 0, 1, 1, imm8),
+    ('VSTR<c> <Sd>, [<Rn>,#+<imm>]', cond, 1, 1, 0, 1, 1, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
+    ('VSTR<c> <Sd>, [<Rn>,#-<imm>]', cond, 1, 1, 0, 1, 0, D, 0, 0, Rn, Sd, 1, 0, 1, 0, imm8),
     ('VPUSH<c> <list>', cond, 1, 1, 0, 1, 0, D, 1, 0, 1, 1, 0, 1, Dd, 1, 0, 1, 1, imm8),
     ('VPUSH<c> <list>', cond, 1, 1, 0, 1, 0, D, 1, 0, 1, 1, 0, 1, Sd, 1, 0, 1, 0, imm8),
     ('VLDMIA<c> <Rn>, <list>', cond, 1, 1, 0, 0, 1, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm8),
@@ -279,8 +279,8 @@ armvfp = [
     ## TODO: distinguish between these two VPOP
     ('VPOP <list>', cond, 1, 1, 0, 0, 1, D, 1, 1, 1, 1, 0, 1, Dd, 1, 0, 1, 1, imm8),
     ('VPOP <list>', cond, 1, 1, 0, 0, 1, D, 1, 1, 1, 1, 0, 1, Sd, 1, 0, 1, 0, imm8),
-    ('VLDR<c> <Dd>, [<Rn>{, #+<imm>}]', cond, 1, 1, 0, 1, 1, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm8),
-    ('VLDR<c> <Dd>, [<Rn>, #-<imm>]', cond, 1, 1, 0, 1, 0, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm8),
+    ('VLDR<c> <Dd>, [<Rn>,#+<imm>]', cond, 1, 1, 0, 1, 1, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm(8, {'m': 4})),
+    ('VLDR<c> <Dd>, [<Rn>,#-<imm>]', cond, 1, 1, 0, 1, 0, D, 0, 1, Rn, Dd, 1, 0, 1, 1, imm(8, {'m': -4})),
     #('VLDR<c> <Dd>, <label>', cond, 1, 1, 0, 1, U, D, 0, 1, Rn, Vd, 1, 0, 1, 1, imm8), FIXME U depends on value of label
     #('VLDR<c> <Dd>, [PC, #-0]', cond, 1, 1, 0, 1, U, D, 0, 1, Rn, Vd, 1, 0, 1, 1, imm8),
     ('VMOV<c> <Sn>, <Rt>', cond, 1, 1, 1, 0, 0, 0, 0, 0, Sn, Rt, 1, 0, 1, 0, N, (0), (0), 1, (0), (0), (0), (0)),

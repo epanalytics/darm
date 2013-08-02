@@ -111,23 +111,61 @@ static char* extract_string_const(darm_fieldgrab_t* t, char* def){
     return ret;
 }
 
+static int extract_imm(darm_fieldgrab_t* t, uint32_t w){
+    int imm;
+    if (F_IMMEDIATE != t->type){
+        return 0;
+    }
+    t->type = F_SHIFT_MASK;
+    imm = extract_insn_bits(t, 0, w);
+    t->type = F_IMMEDIATE;
+    if (t->extend == 1){
+        imm = sign_ext32(imm, t->mask);
+    }
+    if (t->mult > 0){
+        imm *= t->mult;
+    }
+    return imm;
+}
+
 static int armv7_disas_vfp(darm_t* d, uint32_t w)
 {
     int dp, ti, dd, m;
     darm_fieldloader_t* f = &(VFP_INSTR_LOOKUP(w));
     d->mode = M_ARM_VFP;
-    d->instr_type = T_ARM_VFP;
+
+    if (IS_ARM_SIMD_DPI(d->w)){
+        d->instr_type = T_ARM_SIMD_DATAPROC;
+    } else if (IS_ARM_VFP_DPI(d->w)){
+        d->instr_type = T_ARM_VFP_DATAPROC;
+    } else if (IS_ARM_VFP_LDST(d->w)){
+        d->instr_type = T_ARM_VFP_LDST;
+    } else if (IS_ARM_SIMD_LDST(d->w)){
+        d->instr_type = T_ARM_SIMD_LDST;
+    } else if (IS_ARM_VFP_SHRTMV(d->w)){
+        d->instr_type = T_ARM_VFP_SHORTMOVE;
+    } else if (IS_ARM_VFP_LONGMV(d->w)){
+        d->instr_type = T_ARM_VFP_LONGMOVE;
+    } else {
+        d->instr_type = T_ARM_FP;
+    }
+
     d->dtype = f->dtype;
     d->stype = f->stype;
     d->instr = f->instr;
 
-    //printf("\t%s\n", f->format);
+    //int idx = (GETBT(w, 16, 10) << 4) | (GETBT(w, 6, 3) << 1) | GETBT(w, 4, 1);
+    //printf("\tidx=%d\n", idx);
     d->cond = extract_insn_bits(&(f->cond), d->cond, w);
     d->Rn = extract_insn_bits(&(f->Rn), R_INVLD, w);
     d->Rm = extract_insn_bits(&(f->Rm), R_INVLD, w);
     d->Rd = extract_insn_bits(&(f->Rd), R_INVLD, w);
 
+    d->imm = extract_imm(&(f->imm), w);
+    if (d->imm) d->I = B_SET;
+
     switch((uint32_t)d->instr){
+        // TODO: use some subset of T_ARM_VFP_DATAPROC?
     case I_VCVT:
         ti = GETBT(w, 18, 1);
         dp = GETBT(w,  8, 1);
@@ -143,6 +181,14 @@ static int armv7_disas_vfp(darm_t* d, uint32_t w)
             else d->Rd = (d->Rd << 1) | dd;
         }
 
+        break;
+
+        // TODO: other LDST instructions should be here
+    case I_VLDR:
+    case I_VSTR:
+        m = GETBT(w, 8, 1);
+        if (m) d->dtype = D_F64;
+        else d->dtype = D_F32;
         break;
     }
 
@@ -860,10 +906,9 @@ int darm_armv7_disasm(darm_t *d, uint32_t w)
     d->option = O_INVLD;
     d->size = 4;
 
-    if (0b1110 == GETBT(w, 24, 4) && 0b101 == GETBT(w, 9, 3) && 0b0 == GETBT(w, 4, 1)){
+    if (IS_ARM_FP(w)){
         ret = armv7_disas_vfp(d, w);
-    }
-    else {
+    } else {
         if(d->cond == C_UNCOND) {
             ret = armv7_disas_uncond(d, w);
         }

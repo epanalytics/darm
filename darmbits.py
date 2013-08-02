@@ -36,6 +36,12 @@ class Bitsize:
     def __repr__(self):
         return '<%s:%d>' % (self.name, self.bitsize)
 
+class imm(Bitsize):
+    def __init__(self, bits, args):
+        self.name = 'imm%d' % (bits)
+        self.bitsize = bits
+        self.comment = 'Immediate'
+        self.args = args
 
 cond          = Bitsize('cond', 4, 'Conditional Flags')
 Rd            = Bitsize('Rd', 4, 'Destination Register')

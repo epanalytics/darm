@@ -326,7 +326,7 @@ int darm_str(const darm_t *d, darm_str_t *str)
 
         case 'B':
             *args[arg]++ = '[';
-            APPEND(args[arg], darm_any_register_name(d->Rn, d->dtype));
+            APPEND(args[arg], darm_register_name(d->Rn));
 
             // if post-indexed or the index is not even set, then we close
             // the memory address
@@ -387,14 +387,14 @@ int darm_str(const darm_t *d, darm_str_t *str)
 
         case 'M':
             *args[arg]++ = '[';
-            APPEND(args[arg], darm_any_register_name(d->Rn, d->dtype));
+            APPEND(args[arg], darm_register_name(d->Rn));
             *args[arg]++ = ',';
             *args[arg]++ = ' ';
 
             // if the Rm operand is defined, then we use that optionally with
             // a shift, otherwise there might be an immediate value as offset
             if(d->Rm != R_INVLD) {
-                APPEND(args[arg], darm_any_register_name(d->Rm, d->dtype));
+                APPEND(args[arg], darm_register_name(d->Rm));
 
                 const char *type; uint32_t imm;
                 if(darm_immshift_decode(d, &type, &imm) == 0) {
