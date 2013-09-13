@@ -30,6 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
+
 #include "darm.h"
 #include "armv7-tbl.h"
 #include "vfp-tbl.h"
@@ -103,8 +105,8 @@ static int extract_insn_bits(darm_fieldgrab_t* t, uint32_t def, uint32_t w){
     return ret;
 }
 
-static char* extract_string_const(darm_fieldgrab_t* t, char* def){
-    char* ret = def;
+static const char* extract_string_const(darm_fieldgrab_t* t, char* def){
+    const char* ret = def;
     if (F_STRING_CONST == t->type){
         ret = t->str;
     }
@@ -128,28 +130,47 @@ static int extract_imm(darm_fieldgrab_t* t, uint32_t w){
     return imm;
 }
 
+static int armv7_disas_neon(darm_t* d, uint32_t w)
+{
+    //darm_fieldloader_t* f = &(NEON_INSTR_LOOKUP(w));
+    d->mode = M_ARM_NEON;
+
+    if(IS_ARM_SIMD_DPI(d->w)) {
+        d->instr_type = T_ARM_SIMD_DATAPROC;
+    } else if(IS_ARM_SIMD_LDST(d->w)) {
+        d->instr_type = T_ARM_SIMD_LDST;
+    } else {
+        assert(0);
+    }
+
+    // extract fields using fieldloader
+
+    // handle special cases
+
+ 
+    return 0;
+}
+
 static int armv7_disas_vfp(darm_t* d, uint32_t w)
 {
     int dp, ti, dd, m;
     darm_fieldloader_t* f = &(VFP_INSTR_LOOKUP(w));
     d->mode = M_ARM_VFP;
 
-    if (IS_ARM_SIMD_DPI(d->w)){
-        d->instr_type = T_ARM_SIMD_DATAPROC;
-    } else if (IS_ARM_VFP_DPI(d->w)){
+    if (IS_ARM_VFP_DPI(d->w)){
         d->instr_type = T_ARM_VFP_DATAPROC;
     } else if (IS_ARM_VFP_LDST(d->w)){
         d->instr_type = T_ARM_VFP_LDST;
-    } else if (IS_ARM_SIMD_LDST(d->w)){
-        d->instr_type = T_ARM_SIMD_LDST;
     } else if (IS_ARM_VFP_SHRTMV(d->w)){
         d->instr_type = T_ARM_VFP_SHORTMOVE;
     } else if (IS_ARM_VFP_LONGMV(d->w)){
         d->instr_type = T_ARM_VFP_LONGMOVE;
     } else {
+        assert(0);
         d->instr_type = T_ARM_FP;
     }
 
+    // extract fields uisng field loader
     d->dtype = f->dtype;
     d->stype = f->stype;
     d->instr = f->instr;
@@ -164,6 +185,7 @@ static int armv7_disas_vfp(darm_t* d, uint32_t w)
     d->imm = extract_imm(&(f->imm), w);
     if (d->imm) d->I = B_SET;
 
+    // handle special cases
     switch((uint32_t)d->instr){
         // TODO: use some subset of T_ARM_VFP_DATAPROC?
     case I_VCVT:
@@ -183,13 +205,19 @@ static int armv7_disas_vfp(darm_t* d, uint32_t w)
 
         break;
 
-        // TODO: other LDST instructions should be here
-    case I_VLDR:
-    case I_VSTR:
-        m = GETBT(w, 8, 1);
-        if (m) d->dtype = D_F64;
-        else d->dtype = D_F32;
+    case I_VMOV:
+    case I_VMRS:
+    case I_VMSR:
+        // If the instruction didn't explicitly say what size, it's encoded in bit 8
+        if(d->dtype == T_INVLD) {
+            m = GETBT(w, 8, 1);
+            if (m)
+                d->dtype = D_F64;
+            else d->dtype = D_F32;
+        }
         break;
+    
+
     }
 
     return 0;
@@ -906,15 +934,19 @@ int darm_armv7_disasm(darm_t *d, uint32_t w)
     d->option = O_INVLD;
     d->size = 4;
 
-    if (IS_ARM_FP(w)){
+    // rotate, imm, shift, lsb, width, reglist, cpsr, mode -- initialized to 0
+
+    if (IS_ARM_SIMD(w)) {
+        ret = armv7_disas_neon(d, w);
+
+    } else if (IS_ARM_VFP(w)){
         ret = armv7_disas_vfp(d, w);
+
+    } else if(d->cond == C_UNCOND) {
+        ret = armv7_disas_uncond(d, w);
+
     } else {
-        if(d->cond == C_UNCOND) {
-            ret = armv7_disas_uncond(d, w);
-        }
-        else {
-            ret = armv7_disas_cond(d, w);
-        }
+        ret = armv7_disas_cond(d, w);
     }
 
     // return error

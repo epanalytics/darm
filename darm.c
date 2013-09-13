@@ -158,6 +158,13 @@ int darm_str(const darm_t *d, darm_str_t *str)
             arg++;
             continue;
 
+        case '1':
+            // always Rm+1
+            if(d->Rm == R_INVLD) break;
+            APPEND(args[arg], darm_register_name(d->Rm + 1));
+            arg++;
+            continue;
+
         case 'a':
             if(d->Ra == R_INVLD) break;
             APPEND(args[arg], darm_register_name(d->Ra));
@@ -618,3 +625,4 @@ void darm_dump(const darm_t *d)
 
     printf("\n");
 }
+

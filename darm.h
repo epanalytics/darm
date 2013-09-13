@@ -84,6 +84,7 @@ typedef enum _darm_mode_t {
     M_ARM,
     M_THUMB, M_THUMB2_16, M_THUMB2,
     M_ARM_VFP, M_THUMB2_VFP,
+    M_ARM_NEON, M_THUMB2_NEON,
 
     M_INVLD = -1,
 } darm_mode_t;
