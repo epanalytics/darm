@@ -44,7 +44,10 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
     d->cond = C_AL;    
 
     lkup = &(THUMB2_INSTR_LOOKUP(w));
-    if (I_INVLD == lkup->instr) return -1;
+    if (I_INVLD == lkup->instr) {
+        fprintf(stderr, "darm_thumb2_disasm32: null lookup: %lld\n", THUMB2_LOOKUP_INDEX(w));
+        return -1;
+    }
 
     d->instr = lkup->instr;
     d->instr_type = lkup->instr_type;
@@ -102,6 +105,7 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
         }
 
         else {
+            fprintf(stderr, "darm_thumb2_disasm32: unhandled branch\n");
             return -1;
         }
 
@@ -120,9 +124,11 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
         return 0;
         
     default:
+        fprintf(stderr, "darm_thumb2_disasm32: unhandled type: %d\n", d->instr_type);
         return -1;
 
     }
+    fprintf(stderr, "darm_thumb2_disasm32: unreachable\n");
     return -1;
 
 }
@@ -131,8 +137,11 @@ int darm_thumb2_disasm16(darm_t *d, uint16_t w)
 {
     darm_lookup_t* lkup;
 
-    lkup = &(thumb2_16_instr_lookup[GETBT(w, 5, 7)]);
-    if (I_INVLD == lkup->instr) return -1;
+    lkup = &(THUMB2_16_INSTR_LOOKUP(w));
+    if (I_INVLD == lkup->instr) {
+        fprintf(stderr, "darm_thumb2_disasm16: null lookup: %lld\n", THUMB2_16_LOOKUP_INDEX(w));
+        return -1;
+    }
 
     d->instr = lkup->instr;
     d->instr_type = lkup->instr_type;
@@ -177,7 +186,7 @@ int darm_thumb2_disasm16(darm_t *d, uint16_t w)
     case T_THUMB2_16_IT:
         d->instr = I_IT;
 
-        switch(GETBT(w, 8, 4)){
+        switch(GETBT(w, 4, 4)){
         case 0b0000:
             d->instr = I_NOP;
             break;
@@ -193,22 +202,27 @@ int darm_thumb2_disasm16(darm_t *d, uint16_t w)
         case 0b0100:
             d->instr = I_SEV;
             break;
+        default:
+            fprintf(stderr, "bits 8-12 are 0x%x\n", GETBT(w, 8, 4));
         }
 
         if (GETBT(w, 0, 4)){
             if (I_IT != d->instr){
+                fprintf(stderr, "failure 1\n");
                 return -1;
             }
         }
 
         // I_IT instructions should never appear in assembled code
-        if (I_IT == d->instr) return -1;
+        if (I_IT == d->instr) { fprintf(stderr, "failure 2\n");return -1;}
         return 0;
 
     default:
+        fprintf(stderr, "failure 3\n");
         return -1;
     }
 
+    fprintf(stderr, "failure 4\n");
     return -1;
 }
 

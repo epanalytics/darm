@@ -38,8 +38,12 @@ static int thumb_disasm(darm_t *d, uint16_t w)
     uint8_t h1, h2, r1, r2;
     darm_lookup_t* lkup;
 
-    lkup = &(thumb_instr_lookup[w >> 6]);
-    if (I_INVLD == lkup->instr) return -1;
+    lkup = &(THUMB_INSTR_LOOKUP(w));
+    //lkup = &(thumb_instr_lookup[w >> 6]);
+    if (I_INVLD == lkup->instr) {
+        fprintf(stderr, "thumb_disasm: null lookup: %lld\n", THUMB_LOOKUP_INDEX(w));
+        return -1;
+    }
 
     d->instr = lkup->instr;
     d->instr_type = lkup->instr_type;
@@ -124,6 +128,7 @@ static int thumb_disasm(darm_t *d, uint16_t w)
             d->instr = h1? I_BLX : I_BX;
             break;
         default:
+            fprintf(stderr, "thumb_disasm: T_THUMB_HIREG_BX: unhandled instruction\n");
             return -1;
         }
         return 0;
@@ -156,6 +161,7 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         } else if (I_LDR == d->instr || I_STR == d->instr){
             d->imm = (GETBT(w, 6, 5) << 2);
         } else {
+            fprintf(stderr, "thumb_disasm: T_THUMB_LDST_IMM: unhandled instruction\n");
             return -1;
         }
         return 0;        
@@ -190,7 +196,10 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         if (GETBT(w, 8, 1)){
             if (I_PUSH == d->instr) d->reglist |= (1 << LR);
             else if (I_POP == d->instr) d->reglist |= (1 << PC);
-            else return -1;
+            else {
+                fprintf(stderr, "thumb_disasm: T_THUMB_PSHPOP: unhandled instruction\n");
+                return -1;
+            }
         }
         return 0;
 
@@ -209,7 +218,10 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         if (T_THUMB_BR_COND == d->instr_type){
             d->imm = sign_ext32(d->imm, 8);
         }
-        if (d->cond == 0b1110) return -1;
+        if (d->cond == 0b1110) {
+            fprintf(stderr, "thumb_disasm: T_THUMB_BR_COND,SWINT: unhandled condition\n");
+            return -1;
+        }
         return 0;
 
     case T_THUMB_BR_UNCOND:
@@ -218,6 +230,7 @@ static int thumb_disasm(darm_t *d, uint16_t w)
         return 0;
 
     }
+    fprintf(stderr, "thumb_disasm: unhandled instruction type: %d\n", d->instr_type);
     return -1;
 }
 
@@ -236,6 +249,7 @@ int darm_thumb_disasm(darm_t *d, uint16_t w)
 
     switch (w >> 11) {
     case 0b11101: case 0b11110: case 0b11111:
+        fprintf(stderr, "darm_thumb_disasm: unknown err\n");
         return -1;
 
     default:

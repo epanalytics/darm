@@ -45,11 +45,12 @@ dtype_re_2 = re.compile('.*\.([F|S|U]\d\d)\.([F|S|U]\d\d)$')
 # armv7_lookup_bits = 8     # XXXXXXXX........ ................
 thumb_lookup_bits = 10      # XXXXXXXXXX......
 thumb2_16_lookup_bits = 7   # ....XXXXXXX.....
-thumb2_lookup_bits = 10     # ...XXXXXXXXX.... X...............
+thumb2_lookup_bits = 15     # ...XXXXXXXXX.... X...............
 
 thumb_lookup_bitMask =     '1111111111000000'
 thumb2_16_lookup_bitMask = '0000111111100000'
-thumb2_lookup_bitMask =    '0001111111110001' + '0000000000000000' # FIXME code didn't match above documentation
+#thumb2_lookup_bitMask =    '0001111111110001' + '0000000000000000' # FIXME code didn't match above documentation
+thumb2_lookup_bitMask =    '0001101110010000' + '1111111100010000'
 
 def selectBits(allBits, bitMask):
     assert(len(bitMask) == len(allBits))
@@ -58,6 +59,7 @@ def selectBits(allBits, bitMask):
         if bitMask[i] == '1':
             retval.append(allBits[i])
     return retval
+
 
 def struct_definition(name, arr):
     a = arr
@@ -381,13 +383,6 @@ def bit_index(bits):
             t += c
         c *= 2
     return t
-
-def apply_mask(crossp, mask):
-    res = []
-    for b in range(len(mask)-1,-1,-1):
-        if mask[b] == '1':
-            res.insert(0, crossp[b])
-    return res
 
 def generate_mask(table, size):
     all_insns = []
@@ -714,10 +709,13 @@ instr_types = [
     # 32-bit thumb2
     thumb2('BRANCH', 'Branch and miscellaneous control',
            ['ins<c> <label>', 'ins<c> <Rm>'],
-           lambda x, y, z: y[0:2] + y[9:10] == ('1', '0', '1')),
+           lambda x, y, z: z[0:5] == ['1', '1', '1', '1', '0'] and z[16:17] == ['1']),
     thumb2('TABLE_BRANCH', 'Table branch',
            ['ins<c> <Rn> <Rm>'],
-           lambda x, y, z: y[0:10] == ('0', '1', '0', '0', '0', '1', '1', '0', '1', '1')),
+           lambda x, y, z: z[0:12] == ['1', '1', '1', '0', '1', '0', '0', '0', '1', '1', '0', '1']),
+    thumb2('MOV_IMM', 'Move immediate',
+           ['ins{S}<c> <Rd>,#<const>'],
+           lambda x, y, z: z[0:5] == ['1', '1', '1', '1', '0'] and z[6:11] == ['0', '0', '0', '1', '0'] and z[12:17] == ['1', '1', '1', '1', '0']),
 
     # vfp, these are dummies that never are found true, but create the correct type T_<class>_VFP
     armv7('FP',            'VFP/SIMD', ['ins<c>'], lambda x, y, z: False),
@@ -770,7 +768,7 @@ def create_table(insns, mask):
         loader = InstructionLoad(insn)
 
         # get all possible bit-strings for this instruction/bitmask
-        crossp = apply_mask(bit_crossp(insn), mask)
+        crossp = selectBits(bit_crossp(insn), mask)
         for p in itertools.product(*crossp):
             idx = bit_index(p)
 
@@ -840,9 +838,11 @@ if __name__ == '__main__':
                     break
 
     def fillTable(allDescriptions, table, inslen, bitmask, typenum):
+        sys.stderr.write("\nFilling table\n")
         for description in allDescriptions:
             instr = description[0]
             bits = description[1:]
+            sys.stderr.write("Adding instruction " + instr + " : " + str(bits) + "\n")
 
             # Verify bitcount
             bitcount = sum(1 if isinstance(x, int) else x.bitsize for x in bits)
@@ -866,14 +866,35 @@ if __name__ == '__main__':
             for enc in itertools.product(*idbits):
                 # use concatenated idbits value as index
                 idx = sum(int(enc[y])*2**(len(idbits)-1-y) for y in range(len(idbits)))
-                # for each instruction class with this type
-                for entry in (_ for _ in instr_types if _[0] == typenum):
-                    # check if instruction matches class
+
+                # find instruction class
+                classEntry = None
+                for entry in instr_types:
+                    if entry[0] != typenum:
+                        continue
                     if entry[4](bits, enc, allBits):
-                        table[idx] = [instruction_name(instr), entry, format_string(instr)]
-                        # add instruction to list in type
-                        entry[-1].append(instr)
+                        classEntry = entry
                         break
+                if classEntry == None:
+                    sys.stderr.write("Could not find class for instruction " + instruction_name(instr) + ", bits " + str(allBits) + "\n")
+                else:
+                    if idx in table and table[idx][0] != instruction_name(instr):
+                        sys.stderr.write("table collision for " + instruction_name(instr) + " with " + str(table[idx][0]) + "\n")
+                    table[idx] = [instruction_name(instr), entry, format_string(instr)]
+                    entry[-1].append(instr)
+
+
+                #for entry in (_ for _ in instr_types if _[0] == typenum):
+                #    # check if instruction matches class
+                #    if entry[4](bits, enc, allBits):
+                #        if idx in table and table[idx][0] != instruction_name(instr):
+                #            sys.stderr.write("table collision for " + instruction_name(instr) + " with " + str(table[idx][0]) + "\n")
+                #        table[idx] = [instruction_name(instr), entry, format_string(instr)]
+                #        inserted = True
+                #        # add instruction to list in type
+                #        entry[-1].append(instr)
+                #        break
+                #if not inserted:
 
     fillTable(darmtblthumb.thumbs, thumb_table, 16, thumb_lookup_bitMask, 2)
     fillTable(darmtblthumb2.thumb16, thumb2_16_table, 16, thumb2_16_lookup_bitMask, 3)
@@ -1198,7 +1219,7 @@ if __name__ == '__main__':
     #print generate_mask(darmtbl.ARMv7, 32)
     #print generate_mask(darmtblthumb.thumbs, 16)
     #print generate_mask(darmtblthumb2.thumb16, 16)
-    #print generate_mask(darmtblthumb2.thumb32, 32)
+    #sys.stderr.write("thumb32 mask: " + generate_mask(darmtblthumb2.thumb32, 32) + "\n")
     #print generate_mask(darmtblvfp.thumbvfp, 32)
 
 

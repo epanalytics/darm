@@ -269,9 +269,14 @@ int32_t sign_ext32(int32_t v, uint32_t len);
 
 // thumb/thumb2 helpers
 #define IS_THUMB2_32BIT(__sw) ((GETBT(__sw, 13, 3) == 0b111) && (GETBT(__sw, 11, 2) != 0b00))
-#define THUMB_INSTR_LOOKUP(__v) (thumb_instr_lookup[GETBT(__v, 6, 10)])
-#define THUMB2_16_INSTR_LOOKUP(__v) (thumb2_16_instr_lookup[GETBT(__v, 5, 7)])
-#define THUMB2_INSTR_LOOKUP(__v) (thumb2_instr_lookup[(GETBT(__v, 20, 9) << 1) | GETBT(__v, 15, 1)])
+#define THUMB_LOOKUP_INDEX(__v) (GETBT(__v, 6, 10))
+#define THUMB_INSTR_LOOKUP(__v) (thumb_instr_lookup[THUMB_LOOKUP_INDEX(__v)])
+#define THUMB2_16_LOOKUP_INDEX(__v) (GETBT(__v, 5, 7))
+#define THUMB2_16_INSTR_LOOKUP(__v) (thumb2_16_instr_lookup[THUMB2_16_LOOKUP_INDEX(__v)])
+#define THUMB2_LOOKUP_INDEX(__v) (((GETBT(__v, 27, 2) << 13) | (GETBT(__v, 23, 3) << 10 ) | (GETBT(__v, 20, 1) << 9) | (GETBT(__v, 8, 8) << 1) | (GETBT(__v, 4, 1))))
+#define THUMB2_INSTR_LOOKUP(__v) (thumb2_instr_lookup[THUMB2_LOOKUP_INDEX(__v)])
+
+//#define THUMB2_INSTR_LOOKUP(__v) (thumb2_instr_lookup[(GETBT(__v, 20, 9) << 1) | GETBT(__v, 16, 1)])
 
 // fp/simd helpers
 #define IS_ARM_SIMD_DPI(__sw) (GETBT(__sw, 25, 7) == 0b1111001)
@@ -298,6 +303,7 @@ int32_t sign_ext32(int32_t v, uint32_t len);
 #define IS_SIMD(__sw) (IS_ARM_SIMD(__sw) || IS_THUMB_SIMD(__sw))
 #define IS_VFP(__sw) (IS_ARM_VFP(__sw) || IS_THUMB_VFP(__sw))
 
-#define VFP_INSTR_LOOKUP(__v) (vfp_lookup[(GETBT(__v, 16, 10) << 4) | (GETBT(__v, 6, 3) << 1) | GETBT(__v, 4, 1)])
+#define VFP_LOOKUP_INDEX(__v) ((GETBT(__v, 16, 10) << 4) | (GETBT(__v, 6, 3) << 1) | GETBT(__v, 4, 1))
+#define VFP_INSTR_LOOKUP(__v) (vfp_lookup[VFP_LOOKUP_INDEX(__v)])
 
 #endif
