@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "darm.h"
 #include "armv7-tbl.h"
-#include "vfp-tbl.h"
+#include "armvfp-tbl.h"
 
 #define ROR(val, rotate) (((val) >> (rotate)) | ((val) << (32 - (rotate))))
 
@@ -97,41 +97,11 @@ int darm_immshift_decode(const darm_t *d, const char **type,
     return 0;
 }
 
-static int extract_insn_bits(darm_fieldgrab_t* t, uint32_t def, uint32_t w){
-    int ret = def;
-    if (F_SHIFT_MASK == t->type){
-        ret = GETBT(w, t->shift, t->mask);
-    }
-    return ret;
-}
-
-static const char* extract_string_const(darm_fieldgrab_t* t, char* def){
-    const char* ret = def;
-    if (F_STRING_CONST == t->type){
-        ret = t->str;
-    }
-    return ret;
-}
-
-static int extract_imm(darm_fieldgrab_t* t, uint32_t w){
-    int imm;
-    if (F_IMMEDIATE != t->type){
-        return 0;
-    }
-    t->type = F_SHIFT_MASK;
-    imm = extract_insn_bits(t, 0, w);
-    t->type = F_IMMEDIATE;
-    if (t->extend == 1){
-        imm = sign_ext32(imm, t->mask);
-    }
-    if (t->mult > 0){
-        imm *= t->mult;
-    }
-    return imm;
-}
-
 static int armv7_disas_neon(darm_t* d, uint32_t w)
 {
+    fprintf(stderr, "armv7_disas_neon: neon not yet supported\n");
+    return -1;
+
     //darm_fieldloader_t* f = &(NEON_INSTR_LOOKUP(w));
     d->mode = M_ARM_NEON;
 
@@ -154,7 +124,11 @@ static int armv7_disas_neon(darm_t* d, uint32_t w)
 static int armv7_disas_vfp(darm_t* d, uint32_t w)
 {
     int dp, ti, dd, m;
-    darm_fieldloader_t* f = &(VFP_INSTR_LOOKUP(w));
+    darm_fieldloader_t* f = &(ARMVFP_INSTR_LOOKUP(w));
+    if(f->instr == I_INVLD) {
+        fprintf(stderr, "armv7_disas_vfp: null lookup: %u\n", ARMVFP_LOOKUP_INDEX(w));
+        return -1;
+    }
     d->mode = M_ARM_VFP;
 
     if (IS_ARM_VFP_DPI(d->w)){
@@ -209,7 +183,7 @@ static int armv7_disas_vfp(darm_t* d, uint32_t w)
     case I_VMRS:
     case I_VMSR:
         // If the instruction didn't explicitly say what size, it's encoded in bit 8
-        if(d->dtype == T_INVLD) {
+        if(d->dtype == D_INVLD) {
             m = GETBT(w, 8, 1);
             if (m)
                 d->dtype = D_F64;
@@ -294,6 +268,8 @@ static int armv7_disas_uncond(darm_t *d, uint32_t w)
         d->imm |= d->H << 1;
         return 0;
     }
+
+    fprintf(stderr, "armv7_disas_uncond: unreachable\n");
     return -1;
 }
 
@@ -911,6 +887,7 @@ static int armv7_disas_cond(darm_t *d, uint32_t w)
         d->Rm = w & b1111;
         return 0;
     }
+    fprintf(stderr, "armv7_disas_cond: unreachable\n");
     return -1;
 }
 
