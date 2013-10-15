@@ -282,6 +282,9 @@ def format_string(full):
         # either a list of registers, reglist, or a single register
         '<registers>', 'r',
 
+        # vfp register list
+        '<list>', 'r',
+
         # exclamation mark to specify the write-back bit
         '{!}', '!',
 
@@ -741,7 +744,7 @@ def write_header(extension, mask):
     print('#include <stdint.h>')
     print('#include "darm-tbl.h"')
 
-    print('extern darm_fieldloader_t vfp_lookup[%d];' % (2**mask.count('1')))
+    print('extern darm_fieldloader_t ' + extension  + '_lookup[%d];' % (2**mask.count('1')))
     print('#endif')
 
 def write_table(extension, mask, table):
@@ -1227,8 +1230,15 @@ if __name__ == '__main__':
     mask = generate_mask(insns, 32)
     sys.stderr.write("vfp mask: 0b" + mask + "\n")
     table = create_table(insns, mask)
-    write_header('vfp', mask)
-    write_table('vfp', mask, table)
+    write_header('armvfp', mask)
+    write_table('armvfp', mask, table)
+
+    insns = darmtblvfp.thumbvfp
+    mask = generate_mask(insns, 32)
+    sys.stderr.write("thumb vfp mask: 0b" + mask + "\n")
+    table = create_table(insns, mask)
+    write_header('thumbvfp', mask)
+    write_table('thumbvfp', mask, table)
 
     #insns = darmtblneon.armneon
     #mask = generate_mask(insns, 32)

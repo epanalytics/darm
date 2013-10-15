@@ -32,7 +32,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "armv7-tbl.h"
 #include "thumb-tbl.h"
-#include "vfp-tbl.h"
+#include "armvfp-tbl.h"
+#include "thumbvfp-tbl.h"
 
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -47,6 +48,14 @@ POSSIBILITY OF SUCH DAMAGE.
 typedef enum _darm_reg_t {
     r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15,
     FP = b1011, IP = b1100, SP = b1101, LR = b1110, PC = b1111,
+
+    s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15,
+    s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26, s27, s28, s29, s30, s31,
+
+    d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15,
+    d16, d17, d18, d19, d20, d21, d22, d23, d24, d25, d26, d27, d28, d29, d30, d31,
+
+    q0, q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15,
 
     R_INVLD = -1
 } darm_reg_t;
@@ -158,9 +167,21 @@ typedef struct _darm_t {
     darm_datatype_t stype; // source datatype
 
     // register operands
-    darm_reg_t      Rd; // destination
-    darm_reg_t      Rn; // first operand
-    darm_reg_t      Rm; // second operand
+    union {
+        darm_reg_t      Rd; // destination
+        darm_reg_t      Sd;
+        darm_reg_t      Dd;
+    };
+    union {
+        darm_reg_t      Rn; // first operand
+        darm_reg_t      Sn;
+        darm_reg_t      Dn;
+    };
+    union {
+        darm_reg_t      Rm; // second operand
+        darm_reg_t      Sm;
+        darm_reg_t      Dm;
+    };
     darm_reg_t      Ra; // accumulate operand
     darm_reg_t      Rt; // transferred operand
     darm_reg_t      Rt2; // second transferred operand
@@ -186,6 +207,9 @@ typedef struct _darm_t {
 
     // bitmask of registers affected by the STM/LDM/PUSH/POP instruction
     uint16_t        reglist;
+
+    // Number of registers in a VSTM/VLDM/VPUSH/VPOP instruction, mutually exclusive with reglist
+    uint16_t        ext_registers;
 
     // bitmask of CPSR bits explicitly changed by CPS instruction
     uint32_t        cpsr;
@@ -298,12 +322,20 @@ int32_t sign_ext32(int32_t v, uint32_t len);
 #define IS_THUMB_VFP(__sw) (IS_THUMB_VFP_DPI(__sw) || IS_THUMB_VFP_LDST(__sw) || IS_THUMB_VFP_SHRTMV(__sw) || IS_THUMB_VFP_LONGMV(__sw))
 #define IS_THUMB_SIMD(__sw) (IS_THUMB_SIMD_DPI(__sw) || IS_THUMB_SIMD_LDST(__sw))
 #define IS_THUMB_FP(__sw) (IS_THUMB_VFP(__sw) || IS_THUMB_SIMD(__sw))
+#define IS_THUMB_NEON(__sw) (IS_THUMB_SIMD(__sw))
 
 #define IS_FP(__sw) (IS_ARM_FP(__sw) || IS_THUMB_FP(__sw))
 #define IS_SIMD(__sw) (IS_ARM_SIMD(__sw) || IS_THUMB_SIMD(__sw))
 #define IS_VFP(__sw) (IS_ARM_VFP(__sw) || IS_THUMB_VFP(__sw))
 
-#define VFP_LOOKUP_INDEX(__v) ((GETBT(__v, 16, 10) << 4) | (GETBT(__v, 6, 3) << 1) | GETBT(__v, 4, 1))
-#define VFP_INSTR_LOOKUP(__v) (vfp_lookup[VFP_LOOKUP_INDEX(__v)])
+#define ARMVFP_LOOKUP_INDEX(__v) ((GETBT(__v, 16, 10) << 4) | (GETBT(__v, 6, 3) << 1) | GETBT(__v, 4, 1))
+#define THUMBVFP_LOOKUP_INDEX(__v) ARMVFP_LOOKUP_INDEX(__v)
+#define ARMVFP_INSTR_LOOKUP(__v) (armvfp_lookup[ARMVFP_LOOKUP_INDEX(__v)])
+#define THUMBVFP_INSTR_LOOKUP(__v) (thumbvfp_lookup[THUMBVFP_LOOKUP_INDEX(__v)])
+
+
+int extract_insn_bits(darm_fieldgrab_t* t, uint32_t def, uint32_t w);
+const char* extract_string_const(darm_fieldgrab_t* t, char* def);
+int extract_imm(darm_fieldgrab_t* t, uint32_t w);
 
 #endif

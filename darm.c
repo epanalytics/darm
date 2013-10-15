@@ -64,6 +64,7 @@ int32_t sign_ext32(int32_t v, uint32_t len){
 int darm_str(const darm_t *d, darm_str_t *str)
 {
     if(d->instr == I_INVLD || d->instr >= ARRAYSIZE(darm_mnemonics)) {
+        fprintf(stderr, "darm_str: invalid instruction\n");
         return -1;
     }
 
@@ -105,16 +106,26 @@ int darm_str(const darm_t *d, darm_str_t *str)
             phony[0] = THUMB2_INSTR_LOOKUP(d->w).format;
             break;
         case M_ARM_VFP:
-            phony[0] = VFP_INSTR_LOOKUP(d->w).format;
+            phony[0] = ARMVFP_INSTR_LOOKUP(d->w).format;
+            break;
+        case M_THUMB2_VFP:
+            phony[0] = THUMBVFP_INSTR_LOOKUP(d->w).format;
+            if(phony[0] == NULL) {
+                fprintf(stderr, "darm_str: no format for thumbvfp at index %u\n", THUMBVFP_LOOKUP_INDEX(d->w));
+            }
             break;
         default:
+            fprintf(stderr, "darm_str: invalid mode %u\n", d->mode);
             return -1;
         }
         ptrs = phony;
         idx = 0;
     } else
         ptrs = armv7_format_strings[d->instr];
-    if(ptrs[0] == NULL) return -1;
+    if(ptrs[0] == NULL) {
+        fprintf(stderr, "darm_str: no format for mode %u\n", d->mode);
+        return -1;
+    }
     //printf("format is %s\n", ptrs[0]);
 
     for (char ch; (ch = ptrs[idx][off]) != 0; off++) {
@@ -297,8 +308,10 @@ int darm_str(const darm_t *d, darm_str_t *str)
             APPEND(mnemonic, d->T == B_SET ? "TB" : "BT");
             continue;
 
-        case 'r':
-            if(d->reglist != 0) {
+        case 'r': // FIXME handle different register types
+            if(d->ext_registers != 0) {
+                args[arg] += darm_extension_reglist(d, args[arg]);
+            } else if(d->reglist != 0) {
                 args[arg] += darm_reglist(d->reglist, args[arg]);
             }
             else {
@@ -435,13 +448,17 @@ int darm_str(const darm_t *d, darm_str_t *str)
             continue;
 
         default:
+            fprintf(stderr, "darm_str: malformed format: %c of %s for %s\n", ch, ptrs[0], darm_mnemonic_name(d->instr));
             return -1;
         }
 
         // TODO: anything but armv7
         if (M_ARM != d->mode) break;
 
-        if(ptrs[++idx] == NULL || idx == 3) return -1;
+        if(ptrs[++idx] == NULL || idx == 3) {
+            fprintf(stderr, "darm_str: ???\n");
+            return -1;
+        }
         off--;
     }
 
@@ -481,6 +498,18 @@ int darm_str2(const darm_t *d, darm_str_t *str, int lowercase)
     }
     return 0;
 }
+
+int darm_extension_reglist(darm_t* d, char *out)
+{
+    char *base = out;
+    assert(d->ext_registers > 0);
+
+    *out++ = '{';
+
+    return -1;
+    
+}
+
 
 int darm_reglist(uint16_t reglist, char *out)
 {
@@ -624,5 +653,39 @@ void darm_dump(const darm_t *d)
     }
 
     printf("\n");
+}
+
+// darm internal functions
+int extract_insn_bits(darm_fieldgrab_t* t, uint32_t def, uint32_t w){
+    int ret = def;
+    if (F_SHIFT_MASK == t->type){
+        ret = GETBT(w, t->shift, t->mask);
+    }
+    return ret;
+}
+
+const char* extract_string_const(darm_fieldgrab_t* t, char* def){
+    const char* ret = def;
+    if (F_STRING_CONST == t->type){
+        ret = t->str;
+    }
+    return ret;
+}
+
+int extract_imm(darm_fieldgrab_t* t, uint32_t w){
+    int imm;
+    if (F_IMMEDIATE != t->type){
+        return 0;
+    }
+    t->type = F_SHIFT_MASK;
+    imm = extract_insn_bits(t, 0, w);
+    t->type = F_IMMEDIATE;
+    if (t->extend == 1){
+        imm = sign_ext32(imm, t->mask);
+    }
+    if (t->mult > 0){
+        imm *= t->mult;
+    }
+    return imm;
 }
 

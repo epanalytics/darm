@@ -30,8 +30,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
+
 #include "darm.h"
 #include "thumb-tbl.h"
+#include "thumbvfp-tbl.h"
 
 int darm_thumb2_disasm32(darm_t *d, uint32_t w)
 {
@@ -45,7 +48,7 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
 
     lkup = &(THUMB2_INSTR_LOOKUP(w));
     if (I_INVLD == lkup->instr) {
-        fprintf(stderr, "darm_thumb2_disasm32: null lookup: %lld\n", THUMB2_LOOKUP_INDEX(w));
+        fprintf(stderr, "darm_thumb2_disasm32: null lookup: %u\n", THUMB2_LOOKUP_INDEX(w));
         return -1;
     }
 
@@ -139,10 +142,11 @@ int darm_thumb2_disasm16(darm_t *d, uint16_t w)
 
     lkup = &(THUMB2_16_INSTR_LOOKUP(w));
     if (I_INVLD == lkup->instr) {
-        fprintf(stderr, "darm_thumb2_disasm16: null lookup: %lld\n", THUMB2_16_LOOKUP_INDEX(w));
+        fprintf(stderr, "darm_thumb2_disasm16: null lookup: %u\n", THUMB2_16_LOOKUP_INDEX(w));
         return -1;
     }
 
+    d->w = w;
     d->instr = lkup->instr;
     d->instr_type = lkup->instr_type;
     d->mode = M_THUMB2_16;
@@ -226,6 +230,112 @@ int darm_thumb2_disasm16(darm_t *d, uint16_t w)
     return -1;
 }
 
+// FIXME most of this is copy pasted from armv7_disas_vfp -- combine?
+static int thumb2_disas_vfp(darm_t *d, uint32_t w)
+{
+    fprintf(stderr, "disassembling vfp: 0x%x\n", w);
+
+    d->w = w;
+    int dp, ti, dd, m;
+    darm_fieldloader_t* f = &(THUMBVFP_INSTR_LOOKUP(w));
+    if(f->instr == I_INVLD) {
+        fprintf(stderr, "thumb2_disas_vfp: null lookup: %u\n", THUMBVFP_LOOKUP_INDEX(w));
+        return -1;
+    }
+
+    d->mode = M_THUMB2_VFP;
+
+    if (IS_THUMB_VFP_DPI(w)) {
+        d->instr_type = T_THUMB_VFP_DATAPROC;
+    } else if (IS_THUMB_VFP_LDST(w)) {
+        d->instr_type = T_THUMB_VFP_LDST;
+    } else if (IS_THUMB_VFP_SHRTMV(w)) {
+        d->instr_type = T_THUMB_VFP_SHORTMOVE;
+    } else if (IS_THUMB_VFP_LONGMV(w)) {
+        d->instr_type = T_THUMB_VFP_LONGMOVE;
+    } else {
+        assert(0);
+        d->instr_type = T_THUMB_FP;
+    }
+
+    // extract fields using field loader
+    d->dtype = f->dtype;
+    d->stype = f->stype;
+    d->instr = f->instr;
+
+    fprintf(stderr, "disassembling vfp: %s\n", darm_mnemonic_name(d->instr));
+
+    // d->cond = UNCONDITIONAL ?
+    d->cond = extract_insn_bits(&(f->cond), C_AL, w);
+    d->Rn = extract_insn_bits(&(f->Rn), R_INVLD, w);
+    d->Rm = extract_insn_bits(&(f->Rm), R_INVLD, w);
+    d->Rd = extract_insn_bits(&(f->Rd), R_INVLD, w);
+
+    d->imm = extract_imm(&(f->imm), w);
+    if (d->imm) d->I = B_SET;
+
+    // handle special cases
+    switch((uint32_t)d->instr){
+        // TODO: use some subset of T_ARM_VFP_DATAPROC?
+    case I_VCVT:
+        ti = GETBT(w, 18, 1);
+        dp = GETBT(w,  8, 1);
+        dd = GETBT(w, 22, 1);
+        m = GETBT(w, 5, 1);
+        if (ti){
+            d->Rd = (d->Rd << 1) | dd;
+            if (dp) d->Rm = (m << 4) | d->Rm;
+            else d->Rm = (d->Rm << 1) | m;
+        } else {
+            d->Rm = (d->Rm << 1) | m;
+            if (dp) d->Rd = (dd << 4) | d->Rd;
+            else d->Rd = (d->Rd << 1) | dd;
+        }
+
+        break;
+
+    case I_VMOV:
+    case I_VMRS:
+    case I_VMSR:
+        // If the instruction didn't explicitly say what size, it's encoded in bit 8
+        if(d->dtype == D_INVLD) {
+            m = GETBT(w, 8, 1);
+            if (m)
+                d->dtype = D_F64;
+            else d->dtype = D_F32;
+        }
+        break;
+
+    case I_VLDM:
+    case I_VLDMIA:
+    case I_VLDMDB:
+    case I_VSTM:
+    case I_VSTMIA:
+    case I_VSTMDB:
+        // base register of list is Vd
+        // number of registers is
+        // imm8 if 32bit registers
+        // imm8/2 if 64bit registers
+        if(d->dtype == D_64) {
+            d->ext_registers = extract_imm(&(f->imm), w)/2;
+        } else if(d->dtype == D_32) {
+            d->ext_registers = extract_imm(&(f->imm), w);
+        } else {
+            fprintf(stderr, "thumb2_disas_vfp: datatype error for VLDM/VSTM: %d\n", d->dtype);
+            return -1;
+        }
+        
+    }
+    return 0;
+
+}
+
+static int thumb2_disas_neon(darm_t *d, uint32_t w)
+{
+    fprintf(stderr, "thumb2_disas_neon: unsupported\n");
+    return -1;
+}
+
 int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
 {
     (void)d; (void) w; (void) w2;
@@ -258,5 +368,14 @@ int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
 
     // try 32-bit
     tmp = (((uint32_t)w) << 16) | ((uint32_t)w2);
-    return darm_thumb2_disasm32(d, tmp);
+    if(IS_THUMB_VFP(tmp)) {
+        return thumb2_disas_vfp(d, tmp);
+    } else if(IS_THUMB_NEON(tmp)) {
+        return thumb2_disas_neon(d, tmp);
+    } else {
+        return darm_thumb2_disasm32(d, tmp);
+    }
+
+    fprintf(stderr, "darm_thumb2_disasm: unreachable\n");
+    return -1;
 }
