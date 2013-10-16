@@ -964,17 +964,25 @@ const char *darm_any_register_name(darm_reg_t reg, darm_datatype_t dtype){
         return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_F64_registers) ?
             darm_F64_registers[reg] : NULL;
     }
-    else if (D_S32 == dtype){
-        return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_S_registers) ?
-            darm_S_registers[reg] : NULL;
-    }
     return reg != R_INVLD && reg < (int32_t) ARRAYSIZE(darm_registers) ?
         darm_registers[reg] : NULL;
 }
 
 const char *darm_register_name(darm_reg_t reg)
 {
-    return darm_any_register_name(reg, 0);
+    if(reg >= r0 && reg <= r15) {
+        return darm_registers[reg - r0];
+    }
+    if(reg >= s0 && reg <= s31) {
+        return darm_F32_registers[reg - s0];
+    }
+    if(reg >= d0 && reg <= d31) {
+        return darm_F64_registers[reg - d0];
+    }
+    if(reg >= q0 && reg <= q15) {
+        return darm_F128_registers[reg - q0];
+    }
+    return NULL;
 }
 
 const char *darm_shift_type_name(darm_shift_type_t shifttype)

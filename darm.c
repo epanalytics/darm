@@ -310,7 +310,7 @@ int darm_str(const darm_t *d, darm_str_t *str)
             APPEND(mnemonic, d->T == B_SET ? "TB" : "BT");
             continue;
 
-        case 'r': // FIXME handle different register types
+        case 'r':
             if(d->ext_registers != 0) {
                 args[arg] += darm_extension_reglist(d, args[arg]);
             } else if(d->reglist != 0) {
@@ -503,13 +503,24 @@ int darm_str2(const darm_t *d, darm_str_t *str, int lowercase)
 
 int darm_extension_reglist(darm_t* d, char *out)
 {
-    char *base = out;
     assert(d->ext_registers > 0);
+    if(d->ext_registers == 0) return -1;
+
+    char *base = out;
 
     *out++ = '{';
 
-    return -1;
-    
+    darm_reg_t first = d->Rd;
+    int i;
+    for(i = 0; i < d->ext_registers; ++i) {
+        APPEND(out, darm_register_name(d->Rd + i));
+        APPEND(out, ", ");
+    }
+
+    out[-1] = '}';
+    out[0] = 0;
+
+    return out - base;
 }
 
 

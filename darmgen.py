@@ -777,7 +777,7 @@ def create_table(insns, mask):
 
             # fill in the table with the loader and check for conflicts with other instructions
             if table[idx] != None and False:
-                print 'WARNING_CONFLICT'
+                print "WARNING_CONFLICT"
                 print idx
                 print table[idx]
                 print loader
@@ -931,9 +931,9 @@ if __name__ == '__main__':
     print('extern const char *darm_mnemonics[%d];' % count)
     print('extern const char *darm_enctypes[%d];' % len(instr_types))
     print('extern const char *darm_registers[16];')
-    print('extern const char *darm_F32_registers[16];')
-    print('extern const char *darm_F64_registers[16];')
-    print('extern const char *darm_S_registers[16];')
+    print('extern const char *darm_F32_registers[32];')
+    print('extern const char *darm_F64_registers[32];')
+    print('extern const char *darm_F128_registers[16];')
     print('extern const char *darm_datatypes[%d];' % (len(dtypes) + 1))
 
     # define constants 0b0 up upto 0b11111111
@@ -1047,14 +1047,14 @@ if __name__ == '__main__':
     reg = 'r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 SP LR PC'
     print(string_table('darm_registers', reg.split()))
 
-    reg_F32 = ['s%d' % (i) for i in range(16)]
+    reg_F32 = ['s%d' % (i) for i in range(32)]
     print(string_table('darm_F32_registers', reg_F32))
 
-    reg_F64 = ['d%d' % (i) for i in range(16)]
+    reg_F64 = ['d%d' % (i) for i in range(32)]
     print(string_table('darm_F64_registers', reg_F64))
 
-    reg_S = ['s%d' % (i) for i in range(16)]
-    print(string_table('darm_S_registers', reg_S))
+    reg_F128 = ['q%d' % (i) for i in range(16)]
+    print(string_table('darm_F128_registers', reg_F128))
 
     print(string_table('darm_datatypes', ['INVLD'] + dtypes))
 

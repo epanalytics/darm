@@ -167,21 +167,9 @@ typedef struct _darm_t {
     darm_datatype_t stype; // source datatype
 
     // register operands
-    union {
-        darm_reg_t      Rd; // destination
-        darm_reg_t      Sd;
-        darm_reg_t      Dd;
-    };
-    union {
-        darm_reg_t      Rn; // first operand
-        darm_reg_t      Sn;
-        darm_reg_t      Dn;
-    };
-    union {
-        darm_reg_t      Rm; // second operand
-        darm_reg_t      Sm;
-        darm_reg_t      Dm;
-    };
+    darm_reg_t      Rd; // destination
+    darm_reg_t      Rn; // first operand
+    darm_reg_t      Rm; // second operand
     darm_reg_t      Ra; // accumulate operand
     darm_reg_t      Rt; // transferred operand
     darm_reg_t      Rt2; // second transferred operand
