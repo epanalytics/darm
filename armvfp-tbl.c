@@ -11120,19 +11120,19 @@ _EMPTY_LDR,/* 11085 */
 _EMPTY_LDR,/* 11087 */
 {.instr = I_VMOV, .dtype = D_F32, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11088 */
 _EMPTY_LDR,/* 11089 */
-{.instr = I_VCMP, .dtype = D_F32, .format = "cDd#0.0", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11090 */
+{.instr = I_VCMP, .dtype = D_F32, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11090 */
 _EMPTY_LDR,/* 11091 */
 _EMPTY_LDR,/* 11092 */
 _EMPTY_LDR,/* 11093 */
-{.instr = I_VCMPE, .dtype = D_F32, .format = "cDd#0.0", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11094 */
+{.instr = I_VCMPE, .dtype = D_F32, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11094 */
 _EMPTY_LDR,/* 11095 */
 {.instr = I_VMOV, .dtype = D_F64, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11096 */
 _EMPTY_LDR,/* 11097 */
-{.instr = I_VCMP, .dtype = D_F64, .format = "cDd#0.0", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11098 */
+{.instr = I_VCMP, .dtype = D_F64, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11098 */
 _EMPTY_LDR,/* 11099 */
 _EMPTY_LDR,/* 11100 */
 _EMPTY_LDR,/* 11101 */
-{.instr = I_VCMPE, .dtype = D_F64, .format = "cDd#0.0", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11102 */
+{.instr = I_VCMPE, .dtype = D_F64, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11102 */
 _EMPTY_LDR,/* 11103 */
 {.instr = I_VMOV, .dtype = D_F32, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 11104 */
 _EMPTY_LDR,/* 11105 */
@@ -12144,19 +12144,19 @@ _EMPTY_LDR,/* 12109 */
 _EMPTY_LDR,/* 12111 */
 {.instr = I_VMOV, .dtype = D_F32, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12112 */
 _EMPTY_LDR,/* 12113 */
-{.instr = I_VCMP, .dtype = D_F32, .format = "cDd#0.0", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12114 */
+{.instr = I_VCMP, .dtype = D_F32, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12114 */
 _EMPTY_LDR,/* 12115 */
 _EMPTY_LDR,/* 12116 */
 _EMPTY_LDR,/* 12117 */
-{.instr = I_VCMPE, .dtype = D_F32, .format = "cDd#0.0", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12118 */
+{.instr = I_VCMPE, .dtype = D_F32, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12118 */
 _EMPTY_LDR,/* 12119 */
 {.instr = I_VMOV, .dtype = D_F64, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12120 */
 _EMPTY_LDR,/* 12121 */
-{.instr = I_VCMP, .dtype = D_F64, .format = "cDd#0.0", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12122 */
+{.instr = I_VCMP, .dtype = D_F64, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12122 */
 _EMPTY_LDR,/* 12123 */
 _EMPTY_LDR,/* 12124 */
 _EMPTY_LDR,/* 12125 */
-{.instr = I_VCMPE, .dtype = D_F64, .format = "cDd#0.0", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12126 */
+{.instr = I_VCMPE, .dtype = D_F64, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12126 */
 _EMPTY_LDR,/* 12127 */
 {.instr = I_VMOV, .dtype = D_F32, .format = "cDdi", .Rd = {.type=F_SHIFT_MASK, .shift=12, .mask=4}, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, },/* 12128 */
 {.dtype = D_INVLD, .instr = I_VMRS, .cond = {.type=F_SHIFT_MASK, .shift=28, .mask=4}, .stype = D_INVLD, .format = "ctMVFR1", },/* 12129 */

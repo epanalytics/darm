@@ -914,15 +914,19 @@ int darm_armv7_disasm(darm_t *d, uint32_t w)
     // rotate, imm, shift, lsb, width, reglist, cpsr, mode -- initialized to 0
 
     if (IS_ARM_SIMD(w)) {
+        fprintf(stderr, "DISAS: armv7 neon\n");
         ret = armv7_disas_neon(d, w);
 
     } else if (IS_ARM_VFP(w)){
+        fprintf(stderr, "DISAS: armv7 vfp\n");
         ret = armv7_disas_vfp(d, w);
 
     } else if(d->cond == C_UNCOND) {
+        fprintf(stderr, "DISAS: armv7 uncond\n");
         ret = armv7_disas_uncond(d, w);
 
     } else {
+        fprintf(stderr, "DISAS: armv7 cond\n");
         ret = armv7_disas_cond(d, w);
     }
 

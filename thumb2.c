@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "darm.h"
 #include "thumb-tbl.h"
 #include "thumbvfp-tbl.h"
+#include "thumbneon-tbl.h"
 
 int darm_thumb2_disasm32(darm_t *d, uint32_t w)
 {
@@ -333,6 +334,19 @@ static int thumb2_disas_vfp(darm_t *d, uint32_t w)
 static int thumb2_disas_neon(darm_t *d, uint32_t w)
 {
     fprintf(stderr, "thumb2_disas_neon: unsupported\n");
+
+    d->w = w;
+    int dp, ti, dd, m;
+    darm_fieldloader_t* f = &(THUMB_NEON_INSTR_LOOKUP(w));
+    if(f->instr == I_INVLD) {
+        fprintf(stderr, "thumb2_disas_neon: null lookup %u\n", THUMB_NEON_LOOKUP_INDEX(w));
+        return -1;
+    }
+
+    d->mode = M_THUMB2_NEON;
+
+    
+
     return -1;
 }
 
@@ -368,11 +382,14 @@ int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
 
     // try 32-bit
     tmp = (((uint32_t)w) << 16) | ((uint32_t)w2);
-    if(IS_THUMB_VFP(tmp)) {
-        return thumb2_disas_vfp(d, tmp);
-    } else if(IS_THUMB_NEON(tmp)) {
+    if(IS_THUMB_NEON(tmp)) {
+        fprintf(stderr, "DISAS: thumb neon\n");
         return thumb2_disas_neon(d, tmp);
+    } else if(IS_THUMB_VFP(tmp)) {
+        fprintf(stderr, "DISAS: thumb vfp\n");
+        return thumb2_disas_vfp(d, tmp);
     } else {
+        fprintf(stderr, "DISAS: thumb 32\n");
         return darm_thumb2_disasm32(d, tmp);
     }
 

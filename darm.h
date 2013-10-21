@@ -34,6 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "thumb-tbl.h"
 #include "armvfp-tbl.h"
 #include "thumbvfp-tbl.h"
+#include "thumbneon-tbl.h"
 
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -299,7 +300,7 @@ int32_t sign_ext32(int32_t v, uint32_t len);
 #define IS_ARM_VFP_LONGMV(__sw) (GETBT(__sw, 21, 7) == 0b1100010 && GETBT(__sw, 9, 3) == 0b101)
 #define IS_ARM_VFP(__sw) (IS_ARM_VFP_DPI(__sw) || IS_ARM_VFP_LDST(__sw) || IS_ARM_VFP_SHRTMV(__sw) || IS_ARM_VFP_LONGMV(__sw))
 #define IS_ARM_SIMD(__sw) (IS_ARM_SIMD_DPI(__sw) || IS_ARM_SIMD_LDST(__sw))
-#define IS_ARM_FP(__sw) (IS_ARM_VFP(__sw) || IS_ARM_SIMD(__sw))
+//#define IS_ARM_FP(__sw) (IS_ARM_VFP(__sw) || IS_ARM_SIMD(__sw))
 
 #define IS_THUMB_SIMD_DPI(__sw) (GETBT(__sw, 29, 3) == 0b111 && GETBT(__sw, 24, 4) == 0b1111)
 #define IS_THUMB_VFP_DPI(__sw) (GETBT(__sw, 29, 3) == 0b111 && GETBT(__sw, 24, 4) == 0b1110 && GETBT(__sw, 9, 3) == 0b101 && GETBT(__sw, 4, 1) == 0b0)
@@ -309,18 +310,23 @@ int32_t sign_ext32(int32_t v, uint32_t len);
 #define IS_THUMB_VFP_LONGMV(__sw) (GETBT(__sw, 29, 3) == 0b111 && GETBT(__sw, 21, 7) == 0b1100010 && GETBT(__sw, 9, 3) == 0b101)
 #define IS_THUMB_VFP(__sw) (IS_THUMB_VFP_DPI(__sw) || IS_THUMB_VFP_LDST(__sw) || IS_THUMB_VFP_SHRTMV(__sw) || IS_THUMB_VFP_LONGMV(__sw))
 #define IS_THUMB_SIMD(__sw) (IS_THUMB_SIMD_DPI(__sw) || IS_THUMB_SIMD_LDST(__sw))
-#define IS_THUMB_FP(__sw) (IS_THUMB_VFP(__sw) || IS_THUMB_SIMD(__sw))
+//#define IS_THUMB_FP(__sw) (IS_THUMB_VFP(__sw) || IS_THUMB_SIMD(__sw))
 #define IS_THUMB_NEON(__sw) (IS_THUMB_SIMD(__sw))
 
-#define IS_FP(__sw) (IS_ARM_FP(__sw) || IS_THUMB_FP(__sw))
+#define IS_FP(__sw) (IS_ARM_VFP(__sw) || IS_THUMB_VFP(__sw))
+//#define IS_FP(__sw) (IS_ARM_FP(__sw) || IS_THUMB_FP(__sw))
 #define IS_SIMD(__sw) (IS_ARM_SIMD(__sw) || IS_THUMB_SIMD(__sw))
 #define IS_VFP(__sw) (IS_ARM_VFP(__sw) || IS_THUMB_VFP(__sw))
 
+//0b00000011111111110000000111010000
 #define ARMVFP_LOOKUP_INDEX(__v) ((GETBT(__v, 16, 10) << 4) | (GETBT(__v, 6, 3) << 1) | GETBT(__v, 4, 1))
 #define THUMBVFP_LOOKUP_INDEX(__v) ARMVFP_LOOKUP_INDEX(__v)
 #define ARMVFP_INSTR_LOOKUP(__v) (armvfp_lookup[ARMVFP_LOOKUP_INDEX(__v)])
 #define THUMBVFP_INSTR_LOOKUP(__v) (thumbvfp_lookup[THUMBVFP_LOOKUP_INDEX(__v)])
 
+//0b00010011101111000000011101010000
+#define THUMB_NEON_LOOKUP_INDEX(__v) ( (GETBT(__v, 28, 1) << 12) | (GETBT(__v, 23, 3) << 9) | (GETBT(__v, 18, 4) << 5) | (GETBT(__v, 8, 3) << 2) | (GETBT(__v, 6, 1) << 1)  | GETBT(__v, 4, 1) )
+#define THUMB_NEON_INSTR_LOOKUP(__v) (thumbneon_lookup[THUMB_NEON_LOOKUP_INDEX(__v)])
 
 int extract_insn_bits(darm_fieldgrab_t* t, uint32_t def, uint32_t w);
 const char* extract_string_const(darm_fieldgrab_t* t, char* def);

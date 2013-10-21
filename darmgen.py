@@ -252,6 +252,7 @@ def format_string(full):
         '<RdLo>', 'l',
 
         # immediate values
+        '#0.0',    'i',
         '#<const>', 'i',
         '#<imm>', 'i',
         '#<imm2>', 'i',
@@ -1240,9 +1241,11 @@ if __name__ == '__main__':
     write_header('thumbvfp', mask)
     write_table('thumbvfp', mask, table)
 
-    #insns = darmtblneon.armneon
-    #mask = generate_mask(insns, 32)
-    #sys.stderr.write("neon mask 0b" + mask + "\n")
-
+    insns = darmtblneon.thumbneon
+    mask = generate_mask(insns, 32)
+    sys.stderr.write("neon mask 0b" + mask + "\n")
+    table = create_table(insns, mask)
+    write_header('thumbneon', mask)
+    write_table('thumbneon', mask, table)
 
 
