@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "darm.h"
 #include "armv7-tbl.h"
-#include "armvfp-tbl.h"
+#include "ext-tbl.h"
 
 #define ROR(val, rotate) (((val) >> (rotate)) | ((val) << (32 - (rotate))))
 
@@ -97,52 +97,9 @@ int darm_immshift_decode(const darm_t *d, const char **type,
     return 0;
 }
 
-static int armv7_disas_neon(darm_t* d, uint32_t w)
-{
-    fprintf(stderr, "armv7_disas_neon: neon not yet supported\n");
-    return -1;
-
-    //darm_fieldloader_t* f = &(NEON_INSTR_LOOKUP(w));
-    d->mode = M_ARM_NEON;
-
-    if(IS_ARM_SIMD_DPI(d->w)) {
-        d->instr_type = T_ARM_SIMD_DATAPROC;
-    } else if(IS_ARM_SIMD_LDST(d->w)) {
-        d->instr_type = T_ARM_SIMD_LDST;
-    } else {
-        assert(0);
-    }
-
-    // extract fields using fieldloader
-
-    // handle special cases
-
- 
-    return 0;
-}
-
-static int armv7_disas_vfp(darm_t* d, uint32_t w)
+static int load_fields(darm_t* d, uint32_t w, darm_fieldloader_t* f)
 {
     int dp, ti, dd, m;
-    darm_fieldloader_t* f = &(ARMVFP_INSTR_LOOKUP(w));
-    if(f->instr == I_INVLD) {
-        fprintf(stderr, "armv7_disas_vfp: null lookup: %u\n", ARMVFP_LOOKUP_INDEX(w));
-        return -1;
-    }
-    d->mode = M_ARM_VFP;
-
-    if (IS_ARM_VFP_DPI(d->w)){
-        d->instr_type = T_ARM_VFP_DATAPROC;
-    } else if (IS_ARM_VFP_LDST(d->w)){
-        d->instr_type = T_ARM_VFP_LDST;
-    } else if (IS_ARM_VFP_SHRTMV(d->w)){
-        d->instr_type = T_ARM_VFP_SHORTMOVE;
-    } else if (IS_ARM_VFP_LONGMV(d->w)){
-        d->instr_type = T_ARM_VFP_LONGMOVE;
-    } else {
-        assert(0);
-        d->instr_type = T_ARM_FP;
-    }
 
     // extract fields uisng field loader
     d->dtype = f->dtype;
@@ -195,6 +152,7 @@ static int armv7_disas_vfp(darm_t* d, uint32_t w)
     }
 
     return 0;
+
 }
 
 static int armv7_disas_uncond(darm_t *d, uint32_t w)
@@ -891,6 +849,31 @@ static int armv7_disas_cond(darm_t *d, uint32_t w)
     return -1;
 }
 
+static darm_fieldloader_t* get_fieldloader(darm_t *d, uint32_t w)
+{
+    darm_fieldloader_t* f;
+    if(IS_ARM_SIMD_DPI(w)) {
+        f = &(ARM_NEON_DPI_LOOKUP(w));
+        d->mode = M_ARM_NEON;
+        d->instr_type = T_ARM_SIMD_DATAPROC;
+    } else if(IS_ARM_SIMD_LDST(w)) {
+        f = &(ARM_NEON_LDST_LOOKUP(w));
+        d->mode = M_ARM_NEON;
+        d->instr_type = T_ARM_SIMD_LDST;
+    } else if(IS_ARM_VFP_DPI(w)) {
+        f = &(ARM_VFP_DPI_LOOKUP(w));
+        d->mode = M_ARM_VFP;
+        d->instr_type = T_ARM_VFP_DATAPROC;
+    } else if(IS_ARM_VFP_LDST(w)) {
+        f = &(ARM_VFP_LDST_LOOKUP(w));
+        d->mode = M_ARM_VFP;
+        d->instr_type = T_ARM_VFP_LDST;
+    } else {
+        return NULL;
+    }
+    return f;
+}
+
 int darm_armv7_disasm(darm_t *d, uint32_t w)
 {
     int ret = -1;
@@ -913,20 +896,21 @@ int darm_armv7_disasm(darm_t *d, uint32_t w)
 
     // rotate, imm, shift, lsb, width, reglist, cpsr, mode -- initialized to 0
 
-    if (IS_ARM_SIMD(w)) {
-        fprintf(stderr, "DISAS: armv7 neon\n");
-        ret = armv7_disas_neon(d, w);
+    // check for autoloading instructions
+    darm_fieldloader_t *f = get_fieldloader(d, w);
+    if( f != NULL ) {
 
-    } else if (IS_ARM_VFP(w)){
-        fprintf(stderr, "DISAS: armv7 vfp\n");
-        ret = armv7_disas_vfp(d, w);
+        if(f->instr == I_INVLD) {
+            fprintf(stderr, "armv7.c: get_fieldloader: null lookup for 0x%lx\n", w);
+            return -1;
+        }
+        return load_fields(d, w, f);
+    }
 
-    } else if(d->cond == C_UNCOND) {
-        fprintf(stderr, "DISAS: armv7 uncond\n");
+    // otherwise, do manual loading
+    if(d->cond == C_UNCOND) {
         ret = armv7_disas_uncond(d, w);
-
     } else {
-        fprintf(stderr, "DISAS: armv7 cond\n");
         ret = armv7_disas_cond(d, w);
     }
 

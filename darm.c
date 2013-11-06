@@ -108,13 +108,31 @@ int darm_str(const darm_t *d, darm_str_t *str)
             phony[0] = THUMB2_INSTR_LOOKUP(d->w).format;
             break;
         case M_ARM_VFP:
-            phony[0] = ARMVFP_INSTR_LOOKUP(d->w).format;
+            if(IS_ARM_VFP_DPI(d->w)) {
+                phony[0] = ARM_VFP_DPI_LOOKUP(d->w).format;
+            } else if(IS_ARM_VFP_LDST(d->w)) {
+                phony[0] = ARM_VFP_LDST_LOOKUP(d->w).format;
+            } else assert(0);
             break;
+        case M_ARM_NEON:
+            if(IS_ARM_SIMD_DPI(d->w)) {
+                phony[0] = ARM_NEON_DPI_LOOKUP(d->w).format;
+            } else if(IS_ARM_SIMD_LDST(d->w)) {
+                phony[0] = ARM_NEON_LDST_LOOKUP(d->w).format;
+            } else assert(0);
         case M_THUMB2_VFP:
-            phony[0] = THUMBVFP_INSTR_LOOKUP(d->w).format;
-            if(phony[0] == NULL) {
-                fprintf(stderr, "darm_str: no format for thumbvfp at index %u\n", THUMBVFP_LOOKUP_INDEX(d->w));
-            }
+            if(IS_THUMB_VFP_DPI(d->w)) {
+                phony[0] = THUMB_VFP_DPI_LOOKUP(d->w).format;
+            } else if(IS_THUMB_VFP_LDST(d->w)) {
+                phony[0] = THUMB_VFP_LDST_LOOKUP(d->w).format;
+            } else assert(0);
+            break;
+        case M_THUMB2_NEON:
+            if(IS_THUMB_SIMD_DPI(d->w)) {
+                phony[0] = THUMB_NEON_DPI_LOOKUP(d->w).format;
+            } else if(IS_THUMB_SIMD_LDST(d->w)) {
+                phony[0] = THUMB_NEON_LDST_LOOKUP(d->w).format;
+            } else assert(0);
             break;
         default:
             fprintf(stderr, "darm_str: invalid mode %u\n", d->mode);

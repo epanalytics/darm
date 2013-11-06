@@ -38,9 +38,12 @@ import sys
 import textwrap
 import re
 
-dtypes = 'F64 F32 F16 S32 S16 U32 U16 64 32'.split()
-dtype_re_1 = re.compile('.*\.([F|S|U]?\d\d)$')
-dtype_re_2 = re.compile('.*\.([F|S|U]\d\d)\.([F|S|U]\d\d)$')
+dtypes = 'F64 F32 F16 S64 S32 S16 S8 U64 U32 U16 U8 I64 I32 I16 I8 64 32 16 8'.split()
+dtype_re_1 = re.compile('.*\.([F|S|U|I]?\d\d)$')
+dtype_re_2 = re.compile('.*\.([F|S|U|I]\d\d)\.([F|S|U|I]\d\d)$')
+reg_class_re_n = re.compile('<(Q|D|S|R)n>')
+reg_class_re_m = re.compile('<(Q|D|S|R)m>')
+reg_class_re_d = re.compile('<(Q|D|S|R)d>')
 
 # armv7_lookup_bits = 8     # XXXXXXXX........ ................
 thumb_lookup_bits = 10      # XXXXXXXXXX......
@@ -208,6 +211,10 @@ def format_string(full):
         '.S16', 'D',
         '.U32', 'D',
         '.U16', 'D',
+        '.I8',  'D',
+        '.I16', 'D',
+        '.I32', 'D',
+        '.I64', 'D',
         '.64',  'D',
         '.32',  'D',
 
@@ -236,13 +243,16 @@ def format_string(full):
         '<Rdn3>', 'd',
         '<Dd>', 'd',
         '<Sd>', 'd',
+        '<Qd>', 'd',
         '<Rn>', 'n',
         '<Rn3>', 'n',
         '<Dn>', 'n',
         '<Sn>', 'n',
+        '<Qn>', 'n',
         '<Rm>', 'm',
         '<Rm3>', 'm',
         '<Dm>', 'm',
+        '<Qm>', 'm',
         '<Sm>', 'm',
         '<Sm1>', '1',
         '<Ra>', 'a',
@@ -250,6 +260,7 @@ def format_string(full):
         '<Rt2>', '2',
         '<RdHi>', 'h',
         '<RdLo>', 'l',
+        '<Dd+1>', 'n',
 
         # immediate values
         '#0.0',    'i',
@@ -502,9 +513,21 @@ class InstructionLoad:
             t['stype'] = 'D_' + r[0][1]
 
         insert_field(self.insn, t, 'cond')
-        insert_field(self.insn, t, 'Rn', ['Sn', 'Dn'])
-        insert_field(self.insn, t, 'Rd', ['Sd', 'Dd'])
-        insert_field(self.insn, t, 'Rm', ['Sm', 'Dm'])
+        insert_field(self.insn, t, 'Rn', ['Sn', 'Dn', 'Qn'])
+        insert_field(self.insn, t, 'Rd', ['Sd', 'Dd', 'Qd'])
+        insert_field(self.insn, t, 'Rm', ['Sm', 'Dm', 'Qm'])
+
+        regBases = {'R':'r0', 'Q':'q0', 'D':'d0', 'S':'s0'}
+        r = reg_class_re_n.search(desc)
+        if r != None:
+            t['RnBase'] = regBases[r.group(1)]
+        r = reg_class_re_m.search(desc)
+        if r != None:
+            t['RmBase'] = regBases[r.group(1)]
+        r = reg_class_re_d.search(desc)
+        if r != None:
+            t['RdBase'] = regBases[r.group(1)]
+        
 
         insert_field_imm(self.insn, t)
 
@@ -738,31 +761,7 @@ instr_types = [
     thumb('VFP_LONGMOVE',  'VFP/SIMD', ['ins'], lambda x, y, z: False),
 ]
 
-def write_header(extension, mask):
-    magic_open(extension + '-tbl.h')
-    print('#ifndef __DARM_' + extension.upper() + '_TBL__')
-    print('#define __DARM_' + extension.upper() + '_TBL__')
-    print('#include <stdint.h>')
-    print('#include "darm-tbl.h"')
 
-    print('extern darm_fieldloader_t ' + extension  + '_lookup[%d];' % (2**mask.count('1')))
-    print('#endif')
-
-def write_table(extension, mask, table):
-    magic_open(extension + '-tbl.c')
-    print('#include "' + extension + '-tbl.h"')
-
-    e = FieldGrab()
-    se = repr(e)
-    print('#define _EMPTY_LDR %s' % ('{ .format = 0, .instr = I_INVLD, .dtype = D_INVLD, .stype = D_INVLD, .cond = %s, .Rn = %s, .Rm = %s, .Rd = %s}' % (se, se, se, se)))
-
-    print('darm_fieldloader_t ' + extension + '_lookup[%d] = {' % (2**mask.count('1')))
-    for i in range(len(table)):
-        if table[i] == None:
-            print('_EMPTY_LDR,/* %d */' % (i))
-        else:
-            print(repr(table[i]) + ',/* %d */' % (i))
-    print('};')
 
 def create_table(insns, mask):
     # create a table indexed by masked bits of instruction (instruction may go to multiple places in table)
@@ -788,6 +787,34 @@ def create_table(insns, mask):
 
             table[idx] = loader
     return table
+
+# NEON and VFP helpers
+def thumb_neon_dpi(bits):
+    return bits[0:3] == ['1', '1', '1'] and bits[4:8] == ['1', '1', '1', '1']
+def thumb_neon_ldst(bits):
+    return bits[0:8] == ['1', '1', '1', '1', '1', '0', '0', '1'] and bits[11:12] == ['0']
+def thumb_vfp_dpi(bits):
+    return bits[0:3] == ['1','1','1'] and bits[4:8] == ['1','1','1','0'] and bits[20:23] == ['1','0','1'] and bits[27:28] == ['0']
+def thumb_vfp_ldst(bits):
+    return bits[0:3] == ['1','1','1'] and bits[4:7] == ['1','1','0'] and bits[20:23] == ['1','0','1']
+
+def arm_neon_dpi(bits):
+    return bits[0:7] == ['1','1','1','1','0','0','1']
+def arm_neon_ldst(bits):
+    return bits[0:8] == ['1','1','1','1','0','1','0','0'] and bits[11:12] == ['0']
+def arm_vfp_dpi(bits):
+    return bits[4:8] == ['1','1','1','0'] and bits[20:23] == ['1','0','1'] and bits[27:28] == ['0']
+def arm_vfp_ldst(bits):
+    return bits[4:7] == ['1','1','0'] and bits[20:23] == ['1','0','1']
+
+def selectInsnGroup(insns, group):
+    retval = []
+    for insn in insns:
+        if group(bit_crossp(insn)):
+            retval.append(insn)
+    return retval
+
+
 
 if __name__ == '__main__':
     armv7_table, thumb_table, thumb2_16_table, thumb2_table = {}, {}, {}, {}
@@ -958,6 +985,13 @@ if __name__ == '__main__':
     print(enum_table('darm_datatype', ['D_%s' % (i)\
                      for i in ['INVLD'] + dtypes]))
 
+    print(enum_table('darm_reg', ['r%s' % str(i) for i in range(16)] +
+                                 ['FP = b1011', 'IP = b1100', 'SP = b1101', 'LR = b1110', 'PC = b1111'] +
+                                 ['s%s' % str(i) for i in range(32)] +
+                                 ['d%s' % str(i) for i in range(32)] +
+                                 ['q%s' % str(i) for i in range(16)] +
+                                 ['R_INVLD = -1']))
+
     print(struct_definition('darm_fieldgrab_t',\
                                 [['type', 'darm_field_t'],\
                                  ['str', 'const char*'],\
@@ -975,7 +1009,11 @@ if __name__ == '__main__':
                                  ['cond', 'darm_fieldgrab_t'],\
                                  ['Rm', 'darm_fieldgrab_t'],\
                                  ['Rd', 'darm_fieldgrab_t'],\
-                                 ['Rn', 'darm_fieldgrab_t']]))
+                                 ['Rn', 'darm_fieldgrab_t'],\
+                                 ['RmBase', 'darm_reg_t'],\
+                                 ['RdBase', 'darm_reg_t'],\
+                                 ['RnBase', 'darm_reg_t']\
+                                ]))
 
     print('#endif')
 
@@ -1219,33 +1257,90 @@ if __name__ == '__main__':
     print('\n'.join(sorted(lines)))
     print('};')
 
+    ## Write neon and vfp tables ext-tbl.h ext-tbl.c
 
-    #print generate_mask(darmtbl.ARMv7, 32)
-    #print generate_mask(darmtblthumb.thumbs, 16)
-    #print generate_mask(darmtblthumb2.thumb16, 16)
-    #sys.stderr.write("thumb32 mask: " + generate_mask(darmtblthumb2.thumb32, 32) + "\n")
-    #print generate_mask(darmtblvfp.thumbvfp, 32)
+    def createBitMacro(mask):
+        class BitRun:
+            def __init__(self):
+                self.shift = 0
+                self.length = 0
+                self.offset = 0
+
+            def __str__(self):
+                res = "(GETBT(__v, " + str(self.offset) + ", " + str(self.length) + ")"
+                if self.shift == 0:
+                    res += ")"
+                else:
+                    res += " << " + str(self.shift) + ")"
+                return res
+
+        runs = []
+        r = None
+        offset = 0
+        shift = 0
+        for bit in reversed(mask):
+            if bit == "1":
+                if r == None:
+                    r = BitRun()
+                    r.offset = offset
+                    r.shift = shift
+                    #sys.stderr.write("created bit run with offset/shift " + str(r.offset) + "/" + str(r.shift) + "\n")
+               
+                r.length += 1
+                shift += 1
+            else:
+                if r != None:
+                    runs.append(str(r))
+                r = None
+
+            offset += 1
+
+        return "(" + " | ".join(runs) + ")"
+
+    def addTable(descriptions, group, name, header, src):
+        insns = selectInsnGroup(descriptions, group)
+        mask = generate_mask(insns, 32)
+        sys.stderr.write("// " + name + " 0b" + mask + "\n")
+        sys.stderr.write("#define " + name.upper() + "(__v) " + createBitMacro(mask) + "\n")
+        sys.stderr.write("#define " + name.upper() + "_LOOKUP(__v) (" + name + "_lookup[" + name.upper() + "(__v)])\n")
+
+        table = create_table(insns, mask)
+
+        header.write('extern darm_fieldloader_t ' + name + '_lookup[%d];\n' % (2**mask.count('1')))
+        src.write('darm_fieldloader_t ' + name + '_lookup[%d] = {' % (2**mask.count('1')))
+        for i in range(len(table)):
+            if table[i] == None:
+                src.write('_EMPTY_LDR,/* %d */\n' % (i))
+            else:
+                src.write(repr(table[i]) + ',/* %d */\n' % (i))
+        src.write('};\n')
 
 
-    insns = darmtblvfp.armvfp
-    mask = generate_mask(insns, 32)
-    sys.stderr.write("vfp mask: 0b" + mask + "\n")
-    table = create_table(insns, mask)
-    write_header('armvfp', mask)
-    write_table('armvfp', mask, table)
+    header = open('ext-tbl.h', 'w')
+    src    = open('ext-tbl.c', 'w')
 
-    insns = darmtblvfp.thumbvfp
-    mask = generate_mask(insns, 32)
-    sys.stderr.write("thumb vfp mask: 0b" + mask + "\n")
-    table = create_table(insns, mask)
-    write_header('thumbvfp', mask)
-    write_table('thumbvfp', mask, table)
+    header.write('#ifndef __DARM_EXT_TBL__\n')
+    header.write('#define __DARM_EXT_TBL__\n')
+    header.write('#include <stdint.h>\n')
+    header.write('#include "darm-tbl.h"\n')
 
-    insns = darmtblneon.thumbneon
-    mask = generate_mask(insns, 32)
-    sys.stderr.write("neon mask 0b" + mask + "\n")
-    table = create_table(insns, mask)
-    write_header('thumbneon', mask)
-    write_table('thumbneon', mask, table)
+    src.write('#include "ext-tbl.h"\n')
+    ef = repr(FieldGrab())
+    src.write('#define _EMPTY_LDR %s\n' % ('{ .format = 0, .instr = I_INVLD, .dtype = D_INVLD, .stype = D_INVLD, .cond = %s, .Rn = %s, .Rm = %s, .Rd = %s}' % (ef, ef, ef, ef)))
 
+    addTable(darmtblvfp.thumbvfp, thumb_vfp_ldst, "thumb_vfp_ldst", header, src)
+    addTable(darmtblvfp.thumbvfp, thumb_vfp_dpi, "thumb_vfp_dpi", header, src)
+    addTable(darmtblneon.thumbneon, thumb_neon_ldst, "thumb_neon_ldst", header, src)
+    addTable(darmtblneon.thumbneon, thumb_neon_dpi, "thumb_neon_dpi", header, src)
+
+    addTable(darmtblvfp.armvfp, arm_vfp_ldst, "arm_vfp_ldst", header, src)
+    addTable(darmtblvfp.armvfp, arm_vfp_dpi,  "arm_vfp_dpi",  header, src)
+    addTable(darmtblneon.armneon, arm_neon_ldst, "arm_neon_ldst", header, src)
+    addTable(darmtblneon.armneon, arm_neon_dpi, "arm_neon_dpi", header, src)
+    
+
+    header.write('\n#endif\n')
+
+    header.close()
+    src.close()
 

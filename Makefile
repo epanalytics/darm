@@ -9,14 +9,15 @@ endif
 SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)
 
-GENCODESRC = darm-tbl.c armv7-tbl.c thumb-tbl.c armvfp-tbl.c thumbvfp-tbl.c thumbneon-tbl.c
-GENCODEOBJ = darm-tbl.o armv7-tbl.o thumb-tbl.o armvfp-tbl.o thumbvfp-tbl.o thumbneon-tbl.h
+GENCODESRC = darm-tbl.c armv7-tbl.c thumb-tbl.c ext-tbl.c
+GENCODEOBJ = darm-tbl.o armv7-tbl.o thumb-tbl.o ext-tbl.o
 
 STUFF = $(GENCODESRC) $(GENCODEOBJ) $(OBJ) \
 	tests/tests.exe libdarm.a libdarm.so \
 	cli/cli.exe
 
-default: libdarm.a libdarm.so cli/cli.exe tests/tests.exe
+#default: libdarm.a libdarm.so cli/cli.exe tests/tests.exe
+defatult: $(STUFF)
 
 $(GENCODESRC): darmgen.py darmbits.py darmtbl.py \
 	darmtblthumb.py darmtblthumb2.py darmgen.py

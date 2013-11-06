@@ -34,8 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "darm.h"
 #include "thumb-tbl.h"
-#include "thumbvfp-tbl.h"
-#include "thumbneon-tbl.h"
+#include "ext-tbl.h"
 
 int darm_thumb2_disasm32(darm_t *d, uint32_t w)
 {
@@ -49,7 +48,7 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
 
     lkup = &(THUMB2_INSTR_LOOKUP(w));
     if (I_INVLD == lkup->instr) {
-        fprintf(stderr, "darm_thumb2_disasm32: null lookup: %u\n", THUMB2_LOOKUP_INDEX(w));
+        fprintf(stderr, "darm_thumb2_disasm32: null lookup: %u for 0x%lx\n", THUMB2_LOOKUP_INDEX(w), w);
         return -1;
     }
 
@@ -231,49 +230,25 @@ int darm_thumb2_disasm16(darm_t *d, uint16_t w)
     return -1;
 }
 
-// FIXME most of this is copy pasted from armv7_disas_vfp -- combine?
-static int thumb2_disas_vfp(darm_t *d, uint32_t w)
+static int load_fields(darm_t *d, uint32_t w, darm_fieldloader_t* f)
 {
-    fprintf(stderr, "disassembling vfp: 0x%x\n", w);
-
-    d->w = w;
     int dp, ti, dd, m;
-    darm_fieldloader_t* f = &(THUMBVFP_INSTR_LOOKUP(w));
-    if(f->instr == I_INVLD) {
-        fprintf(stderr, "thumb2_disas_vfp: null lookup: %u\n", THUMBVFP_LOOKUP_INDEX(w));
-        return -1;
-    }
-
-    d->mode = M_THUMB2_VFP;
-
-    if (IS_THUMB_VFP_DPI(w)) {
-        d->instr_type = T_THUMB_VFP_DATAPROC;
-    } else if (IS_THUMB_VFP_LDST(w)) {
-        d->instr_type = T_THUMB_VFP_LDST;
-    } else if (IS_THUMB_VFP_SHRTMV(w)) {
-        d->instr_type = T_THUMB_VFP_SHORTMOVE;
-    } else if (IS_THUMB_VFP_LONGMV(w)) {
-        d->instr_type = T_THUMB_VFP_LONGMOVE;
-    } else {
-        assert(0);
-        d->instr_type = T_THUMB_FP;
-    }
 
     // extract fields using field loader
     d->dtype = f->dtype;
     d->stype = f->stype;
     d->instr = f->instr;
 
-    fprintf(stderr, "disassembling vfp: %s\n", darm_mnemonic_name(d->instr));
-
-    // d->cond = UNCONDITIONAL ?
-    d->cond = extract_insn_bits(&(f->cond), C_AL, w);
-    d->Rn = extract_insn_bits(&(f->Rn), R_INVLD, w);
-    d->Rm = extract_insn_bits(&(f->Rm), R_INVLD, w);
-    d->Rd = extract_insn_bits(&(f->Rd), R_INVLD, w);
+    d->stype = d->dtype; // FIXME not true for long operations
 
     d->imm = extract_imm(&(f->imm), w);
     if (d->imm) d->I = B_SET;
+
+    // d->cond = UNCONDITIONAL ?
+    d->cond = extract_insn_bits(&(f->cond), C_AL, w);
+    d->Rn = extract_insn_bits(&(f->Rn), R_INVLD, w) + f->RnBase;
+    d->Rm = extract_insn_bits(&(f->Rm), R_INVLD, w) + f->RmBase;
+    d->Rd = extract_insn_bits(&(f->Rd), R_INVLD, w) + f->RdBase;
 
     // handle special cases
     switch((uint32_t)d->instr){
@@ -322,32 +297,39 @@ static int thumb2_disas_vfp(darm_t *d, uint32_t w)
         } else if(d->dtype == D_32) {
             d->ext_registers = extract_imm(&(f->imm), w);
         } else {
-            fprintf(stderr, "thumb2_disas_vfp: datatype error for VLDM/VSTM: %d\n", d->dtype);
+            fprintf(stderr, "thumb2_disas_neon: datatype error for VLDM/VSTM: %d\n", d->dtype);
             return -1;
         }
         
     }
     return 0;
-
 }
 
-static int thumb2_disas_neon(darm_t *d, uint32_t w)
-{
-    fprintf(stderr, "thumb2_disas_neon: unsupported\n");
 
-    d->w = w;
-    int dp, ti, dd, m;
-    darm_fieldloader_t* f = &(THUMB_NEON_INSTR_LOOKUP(w));
-    if(f->instr == I_INVLD) {
-        fprintf(stderr, "thumb2_disas_neon: null lookup %u\n", THUMB_NEON_LOOKUP_INDEX(w));
-        return -1;
+static darm_fieldloader_t* get_fieldloader(darm_t *d, uint32_t w)
+{
+    darm_fieldloader_t* f;
+    if(IS_THUMB_SIMD_DPI(w)) {
+        f = &(THUMB_NEON_DPI_LOOKUP(w));
+        d->mode = M_THUMB2_NEON;
+        d->instr_type = T_THUMB_SIMD_DATAPROC;
+    } else if(IS_THUMB_SIMD_LDST(w)) {
+        f = &(THUMB_NEON_LDST_LOOKUP(w));
+        d->mode = M_THUMB2_NEON;
+        d->instr_type = T_THUMB_SIMD_LDST;
+    } else if(IS_THUMB_VFP_DPI(w)) {
+        f = &(THUMB_VFP_DPI_LOOKUP(w));
+        d->mode = M_THUMB2_VFP;
+        d->instr_type = T_THUMB_VFP_DATAPROC;
+    } else if(IS_THUMB_VFP_LDST(w)) {
+        f = &(THUMB_VFP_LDST_LOOKUP(w));
+        d->mode = M_THUMB2_VFP;
+        d->instr_type = T_THUMB_VFP_LDST;
+    } else {
+        return NULL;
     }
 
-    d->mode = M_THUMB2_NEON;
-
-    
-
-    return -1;
+    return f;
 }
 
 int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
@@ -382,14 +364,15 @@ int darm_thumb2_disasm(darm_t *d, uint16_t w, uint16_t w2)
 
     // try 32-bit
     tmp = (((uint32_t)w) << 16) | ((uint32_t)w2);
-    if(IS_THUMB_NEON(tmp)) {
-        fprintf(stderr, "DISAS: thumb neon\n");
-        return thumb2_disas_neon(d, tmp);
-    } else if(IS_THUMB_VFP(tmp)) {
-        fprintf(stderr, "DISAS: thumb vfp\n");
-        return thumb2_disas_vfp(d, tmp);
+    d->w = tmp;
+    darm_fieldloader_t* f = get_fieldloader(d, tmp);
+    if(f != NULL) {
+        if(f->instr == I_INVLD) {
+            fprintf(stderr, "thumb2.c: null lookup for 0x%lx\n", w);
+            return -1;
+        }
+        return load_fields(d, tmp, f);
     } else {
-        fprintf(stderr, "DISAS: thumb 32\n");
         return darm_thumb2_disasm32(d, tmp);
     }
 
