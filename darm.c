@@ -465,6 +465,13 @@ int darm_str(const darm_t *d, darm_str_t *str)
             // TODO: for TBB/TBH print these outside all args?
         case '[':
         case ']':
+        case ':':
+        case '{':
+        case '}':
+        case '6':
+        case '4':
+        case '#':
+        case '-':
             continue;
 
         default:
