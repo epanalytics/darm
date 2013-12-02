@@ -135,20 +135,21 @@ int darm_thumb2_disasm32(darm_t *d, uint32_t w)
         return 0;
 
     case T_THUMB2_OTHER:
-        if(GETBT(w,20,12) == 0b111110001101 ||
-           GETBT(w,20,12) == 0b111110000101) {
-            d->Rn = GETBT(w, 16, 4);
-            d->Rt = GETBT(w, 12, 4);
-            d->instr = I_LDR;
-            return 0;
-        } else if(GETBT(w,20,12) == 0b111110001100 ||
-                  GETBT(w,20,12) == 0b111110000100) {
+        if(GETBT(w,20,12) == 0b111110001100 ||
+           GETBT(w,20,12) == 0b111110000100) {
             d->Rn = GETBT(w,16,4);
             d->Rt = GETBT(w,12,4);
             d->instr = I_STR;
             return 0;
+        } else if(GETBT(w,20,12) == 0b111110001101 ||
+                  GETBT(w,20,12) == 0b111110000101) {
+            d->Rn = GETBT(w, 16, 4);
+            d->Rt = GETBT(w, 12, 4);
+            d->instr = I_LDR;
+            return 0;
         } else {
             fprintf(stderr, "unhandled instruction in thumb2_other: 0x %lx\n", w);
+            return -1;
         }
 
     default:

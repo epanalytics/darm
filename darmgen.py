@@ -445,6 +445,8 @@ def insert_field(insn, table, name, opts = []):
         if p != None:
             assert(not table.has_key(name))
             table[name] = FieldGrab_ShiftMask((p, l))
+            return n
+    return None
 
 def insert_field_imm(insn, table):
     p, l, f = bits_pos(insn, db.imm, True)
@@ -513,21 +515,20 @@ class InstructionLoad:
             t['stype'] = 'D_' + r[0][1]
 
         insert_field(self.insn, t, 'cond')
-        insert_field(self.insn, t, 'Rn', ['Sn', 'Dn', 'Qn'])
-        insert_field(self.insn, t, 'Rd', ['Sd', 'Dd', 'Qd'])
-        insert_field(self.insn, t, 'Rm', ['Sm', 'Dm', 'Qm'])
 
-        regBases = {'R':'r0', 'Q':'q0', 'D':'d0', 'S':'s0'}
-        r = reg_class_re_n.search(desc)
-        if r != None:
-            t['RnBase'] = regBases[r.group(1)]
-        r = reg_class_re_m.search(desc)
-        if r != None:
-            t['RmBase'] = regBases[r.group(1)]
-        r = reg_class_re_d.search(desc)
-        if r != None:
-            t['RdBase'] = regBases[r.group(1)]
-        
+        def regbase(reg):
+            return {'R':'r0', 'Q':'q0', 'D':'d0', 'S':'s0'}[reg[0]]
+
+        reg = insert_field(self.insn, t, 'Rn', ['Sn', 'Dn', 'Qn'])
+        if reg != None:
+            t['RnBase'] = regbase(reg)
+        reg = insert_field(self.insn, t, 'Rd', ['Sd', 'Dd', 'Qd'])
+        if reg != None:
+            t['RdBase'] = regbase(reg)
+        insert_field(self.insn, t, 'Rm', ['Sm', 'Dm', 'Qm'])
+        if reg != None:
+            t['RmBase'] = regbase(reg)
+
 
         insert_field_imm(self.insn, t)
 
@@ -746,6 +747,9 @@ instr_types = [
     thumb2('LDSTREGS', 'Load or store multiple registers at once',
            ['ins<c> <Rn>{!}, <registers>'],
            lambda x, y, z: x[-1] == db.register_list13),
+#    thumb2('STORE_SINGLE', 'Store single data item',
+#           [''],
+#           lambda x, y, z: z[0:8] == ['1', '1', '1', '1', '1', '0', '0', '0'] and z[11:12] == ['0']),
     thumb2('OTHER', 'Catch-all class',
            [],
            lambda x, y, z: True),
@@ -803,6 +807,8 @@ def thumb_vfp_dpi(bits):
     return bits[0:3] == ['1','1','1'] and bits[4:8] == ['1','1','1','0'] and bits[20:23] == ['1','0','1'] and bits[27:28] == ['0']
 def thumb_vfp_ldst(bits):
     return bits[0:3] == ['1','1','1'] and bits[4:7] == ['1','1','0'] and bits[20:23] == ['1','0','1']
+
+
 
 def arm_neon_dpi(bits):
     return bits[0:7] == ['1','1','1','1','0','0','1']
@@ -1347,7 +1353,8 @@ if __name__ == '__main__':
     addTable(darmtblvfp.armvfp, arm_vfp_dpi,  "arm_vfp_dpi",  header, src)
     addTable(darmtblneon.armneon, arm_neon_ldst, "arm_neon_ldst", header, src)
     addTable(darmtblneon.armneon, arm_neon_dpi, "arm_neon_dpi", header, src)
-    
+
+    #addTable(darmtblthumb2.thumb32, thumb2_all, "thumb2", header, src)
 
     header.write('\n#endif\n')
     lookups.write('\n#endif\n')
